@@ -44,10 +44,9 @@ function injectWidgets() {
     (btn as any).__stickyNoteInjected = true;
 
     const container = document.createElement('div');
-    // Using a flex container that matches twitter actions spacing to look native
-    container.className = 'sticky-note-injection-point flex items-center justify-center mr-1';
 
     if (tweet) {
+       container.className = 'sticky-note-injection-point inline-flex items-center justify-center mr-1';
        // On a tweet, the caret is usually grouped with Grok actions inside an r-1cmwbt1 container
        // We inject as the first child of this container to appear next to Grok icon.
        const actionsContainer = btn.closest('.r-1cmwbt1') || btn.parentNode;
@@ -57,6 +56,7 @@ function injectWidgets() {
          btn.parentNode?.insertBefore(container, btn);
        }
     } else {
+       container.className = 'sticky-note-injection-point flex items-center justify-center h-full mr-2';
        // Inside user actions (profile) wrapper directly
        btn.parentNode?.insertBefore(container, btn);
     }

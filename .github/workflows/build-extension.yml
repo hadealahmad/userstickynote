@@ -1,0 +1,61 @@
+name: Build Chrome Extension Bundle
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Extension
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun Environment
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: bun install
+        
+      - name: Compile and Bundle Extension
+        run: bun run build
+        
+      - name: Create Extension Package (ZIP)
+        run: |
+          cd dist
+          zip -r ../twitter-sticky-notes-extension.zip *
+          
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: twitter-sticky-notes-extension
+          path: twitter-sticky-notes-extension.zip
+          retention-days: 14
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: twitter-sticky-notes-extension
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: twitter-sticky-notes-extension.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

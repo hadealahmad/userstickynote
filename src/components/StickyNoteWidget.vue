@@ -1,5 +1,5 @@
 <template>
-  <span class="inline-flex items-center z-[99999] sticky-note-widget group" @click.stop.prevent>
+  <div class="flex items-center justify-center h-full z-[99999] sticky-note-widget group" @click.stop.prevent>
     <Popover :open="isOpen" @update:open="isOpen = $event">
       <PopoverTrigger as-child>
         <button
@@ -8,12 +8,12 @@
             'p-[6px] rounded-full hover:bg-zinc-800 border-none bg-transparent': !isProfile,
             'text-zinc-400 hover:text-yellow-500': !isProfile && !hasNotes,
             'text-yellow-500': !isProfile && hasNotes,
-            'h-[34px] min-w-[34px] px-2 rounded-full border border-[rgb(83,100,113)] hover:bg-[rgba(239,243,244,0.1)] text-zinc-100': isProfile && !hasNotes,
-            'h-[34px] min-w-[34px] px-2 rounded-full border border-yellow-500 hover:bg-[rgba(239,243,244,0.1)] text-yellow-500': isProfile && hasNotes,
+            'w-[36px] h-[36px] rounded-full border border-[rgb(83,100,113)] hover:bg-[rgba(239,243,244,0.1)] text-zinc-100': isProfile && !hasNotes,
+            'w-[36px] h-[36px] rounded-full border border-yellow-500 hover:bg-[rgba(239,243,244,0.1)] text-yellow-500': isProfile && hasNotes,
           }"
           :title="hasNotes ? 'View Notes' : 'Add Note'"
         >
-          <StickyNoteIcon :size="!isProfile ? 16 : 19" :class="{ 'fill-yellow-500 text-yellow-500': hasNotes, 'text-zinc-400/50': !hasNotes && !isProfile, 'text-[rgb(239,243,244)]': !hasNotes && isProfile }" />
+          <StickyNoteIcon :size="!isProfile ? 16 : 20" :class="{ 'fill-yellow-500 text-yellow-500': hasNotes, 'text-zinc-400/50': !hasNotes && !isProfile, 'text-[rgb(239,243,244)]': !hasNotes && isProfile }" />
         </button>
       </PopoverTrigger>
       <!-- We explicitly use tailwind scoping to avoid Twitter styles overriding it -->
@@ -73,11 +73,11 @@
         </div>
       </PopoverContent>
     </Popover>
-  </span>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { StickyNote as StickyNoteIcon, Trash as TrashIcon, Pencil as PencilIcon } from 'lucide-vue-next'
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover/index'
 import { Button } from './ui/button/index'
@@ -89,6 +89,7 @@ const props = defineProps<{ username: string, sourceUrl: string, isProfile?: boo
 const isOpen = ref(false)
 const notes = ref<StickyNote[]>([])
 const newDraft = ref('')
+const syncInterval = ref<any>(null)
 
 const editingNoteId = ref<string | null>(null)
 const editDraft = ref('')
@@ -102,6 +103,7 @@ async function loadNotes() {
     notes.value = allUserNotes.sort((a,b) => b.updatedAt - a.updatedAt)
   } catch (err) {
     console.debug('Twitter Sticky Notes: Context invalidated or storage error. Please refresh the page.', err)
+    if (syncInterval.value) clearInterval(syncInterval.value)
   }
 }
 
@@ -111,9 +113,13 @@ onMounted(() => {
 
 // Interval to keep synced
 onMounted(() => {
-  setInterval(() => {
+  syncInterval.value = setInterval(() => {
     if (!isOpen.value) loadNotes()
   }, 3000)
+})
+
+onUnmounted(() => {
+  if (syncInterval.value) clearInterval(syncInterval.value)
 })
 
 watch(isOpen, (newVal) => {

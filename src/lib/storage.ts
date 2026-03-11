@@ -17,11 +17,16 @@ export class StorageService {
   }
 
   static async getAllNotes(): Promise<StickyNote[]> {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       if (typeof chrome !== 'undefined' && chrome.storage) {
-        chrome.storage.local.get(['stickyNotes'], (result) => {
-          resolve((result.stickyNotes as StickyNote[]) || []);
-        });
+        try {
+          chrome.storage.local.get(['stickyNotes'], (result) => {
+            if (chrome.runtime.lastError) return reject(chrome.runtime.lastError);
+            resolve((result.stickyNotes as StickyNote[]) || []);
+          });
+        } catch (err) {
+          reject(err);
+        }
       } else {
         // Fallback for local development outside extension
         const raw = localStorage.getItem('stickyNotes')
@@ -41,10 +46,16 @@ export class StorageService {
       note.updatedAt = Date.now();
       allNotes.push(note);
     }
-    
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       if (typeof chrome !== 'undefined' && chrome.storage) {
-        chrome.storage.local.set({ stickyNotes: allNotes }, () => resolve());
+        try {
+          chrome.storage.local.set({ stickyNotes: allNotes }, () => {
+            if (chrome.runtime.lastError) return reject(chrome.runtime.lastError);
+            resolve();
+          });
+        } catch (err) {
+          reject(err);
+        }
       } else {
         localStorage.setItem('stickyNotes', JSON.stringify(allNotes));
         resolve()
@@ -55,9 +66,16 @@ export class StorageService {
   static async deleteNote(id: string): Promise<void> {
     let allNotes = await this.getAllNotes();
     allNotes = allNotes.filter(n => n.id !== id);
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       if (typeof chrome !== 'undefined' && chrome.storage) {
-        chrome.storage.local.set({ stickyNotes: allNotes }, () => resolve());
+        try {
+          chrome.storage.local.set({ stickyNotes: allNotes }, () => {
+            if (chrome.runtime.lastError) return reject(chrome.runtime.lastError);
+            resolve();
+          });
+        } catch (err) {
+          reject(err);
+        }
       } else {
         localStorage.setItem('stickyNotes', JSON.stringify(allNotes));
         resolve()
