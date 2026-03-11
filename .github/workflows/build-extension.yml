@@ -1,5 +1,8 @@
 name: Build Chrome Extension Bundle
 
+permissions:
+  contents: write
+
 on:
   push:
     branches:
