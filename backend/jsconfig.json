@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "esnext",
+    "moduleResolution": "node",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./resources/js/*"]
+    },
+    "jsx": "preserve",
+    "lib": ["esnext", "dom"]
+  },
+  "include": ["resources/js/**/*.js", "resources/js/**/*.vue"]
+}

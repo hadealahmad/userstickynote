@@ -2,7 +2,30 @@
 import { ref } from 'vue';
 import { useForm, usePage, Head, Link } from '@inertiajs/vue3';
 import DashboardLayout from '../Layouts/DashboardLayout.vue';
-import { Key, Plus, Trash2, CheckCircle, Copy, Search, Edit3, Trash, ShieldAlert, BadgeDollarSign, CreditCard } from 'lucide-vue-next';
+import { 
+  Key, Plus, Trash2, CheckCircle, Copy, Search, Edit3, Trash, 
+  ShieldAlert, BadgeDollarSign, CreditCard, ExternalLink, 
+  Clock, User, MoreVertical, AlertTriangle
+} from 'lucide-vue-next';
+import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { 
+  Dialog, DialogContent, DialogDescription, DialogFooter, 
+  DialogHeader, DialogTitle, DialogTrigger 
+} from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const props = defineProps({
   tokens: Array,
@@ -11,10 +34,10 @@ const props = defineProps({
 });
 
 const page = usePage();
-const showTokenModal = ref(false);
-const showSuccessModal = ref(false);
-const showDeleteAccountModal = ref(false);
-const showNoteModal = ref(false);
+const showTokenDialog = ref(false);
+const showSuccessDialog = ref(false);
+const showDeleteAccountDialog = ref(false);
+const showNoteDialog = ref(false);
 const editingNote = ref(null);
 const generatedToken = ref(null);
 
@@ -30,14 +53,14 @@ const createToken = () => {
   tokenForm.post('/tokens', {
     onSuccess: (p) => {
       generatedToken.value = p.props.flash.newToken;
-      showTokenModal.value = false;
-      showSuccessModal.value = true;
+      showTokenDialog.value = false;
+      showSuccessDialog.value = true;
       tokenForm.reset();
     },
   });
 };
 
-const openNoteModal = (note = null) => {
+const openNoteDialog = (note = null) => {
   editingNote.value = note;
   if (note) {
     noteForm.id = note.id;
@@ -46,17 +69,17 @@ const openNoteModal = (note = null) => {
   } else {
     noteForm.reset();
   }
-  showNoteModal.value = true;
+  showNoteDialog.value = true;
 };
 
 const saveNote = () => {
   if (editingNote.value) {
     noteForm.put(`/notes/${editingNote.value.id}`, {
-      onSuccess: () => { showNoteModal.value = false; noteForm.reset(); }
+      onSuccess: () => { showNoteDialog.value = false; noteForm.reset(); }
     });
   } else {
     noteForm.post('/notes', {
-      onSuccess: () => { showNoteModal.value = false; noteForm.reset(); }
+      onSuccess: () => { showNoteDialog.value = false; noteForm.reset(); }
     });
   }
 };
@@ -73,12 +96,16 @@ const deleteAccount = () => {
 
 const copyToken = () => {
   navigator.clipboard.writeText(generatedToken.value.plain);
-  alert('Token copied!');
+  // We could use a toast here if we had one
 };
 
 const formatDate = (date) => {
   if (!date) return 'Never';
-  return new Date(date).toLocaleDateString();
+  return new Date(date).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
 };
 </script>
 
@@ -87,174 +114,303 @@ const formatDate = (date) => {
 
   <DashboardLayout>
     <!-- Subscription Banner -->
-    <div v-if="!$page.props.auth.user.is_subscribed" class="mb-8 p-6 rounded-3xl bg-amber-500/10 border border-amber-500/20 flex flex-col md:flex-row items-center justify-between gap-6">
-       <div class="flex items-center gap-4 text-center md:text-left">
-          <div class="w-12 h-12 bg-amber-500/20 rounded-2xl flex items-center justify-center shrink-0">
-             <BadgeDollarSign class="text-amber-500" />
+    <Card v-if="!$page.props.auth.user.is_subscribed" class="mb-10 overflow-hidden border-orange-500/20 bg-orange-500/5">
+       <CardContent class="p-6">
+          <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="flex items-center gap-5 text-center md:text-left">
+               <div class="w-14 h-14 bg-orange-500/10 rounded-2xl flex items-center justify-center shrink-0 border border-orange-500/20">
+                  <BadgeDollarSign class="w-7 h-7 text-orange-500" />
+               </div>
+               <div>
+                  <h3 class="font-bold text-xl mb-1">Cloud Sync is Inactive</h3>
+                  <p class="text-muted-foreground text-sm max-w-md">Unlock multi-device sync, web management, and priority features for just $1/year.</p>
+               </div>
+            </div>
+            <Button size="lg" as-child class="bg-orange-500 hover:bg-orange-600 text-white rounded-xl px-8 font-bold">
+               <a href="/billing/checkout">
+                  <CreditCard class="w-5 h-5 mr-2" />
+                  Get Premium
+               </a>
+            </Button>
           </div>
-          <div>
-             <h3 class="font-bold text-lg">Cloud Sync is Inactive</h3>
-             <p class="text-zinc-500 text-sm">Unlock multi-device sync and web management for just $1/year.</p>
-          </div>
-       </div>
-       <a href="/billing/checkout" class="bg-amber-500 hover:bg-amber-400 text-black px-6 py-3 rounded-2xl font-bold transition-all flex items-center gap-2">
-          <CreditCard class="w-4 h-4" />
-          Get Premium
-       </a>
-    </div>
+       </CardContent>
+    </Card>
 
-    <div class="grid md:grid-cols-3 gap-6 mb-12">
-      <div class="p-8 rounded-3xl bg-zinc-900 border border-white/5">
-          <p class="text-zinc-500 font-medium mb-1">Status</p>
-          <div v-if="page.props.auth.user.is_subscribed" class="flex items-center gap-2 text-green-500 font-bold">
-             <CheckCircle class="w-4 h-4" /> Premium
-          </div>
-          <div v-else class="text-zinc-400 font-bold">Free Plan</div>
-      </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+      <Card class="bg-card">
+          <CardHeader class="pb-2">
+              <CardDescription class="text-xs font-bold uppercase tracking-wider">Account Status</CardDescription>
+          </CardHeader>
+          <CardContent>
+              <div v-if="page.props.auth.user.is_subscribed" class="flex items-center gap-2 text-primary font-bold text-lg">
+                 <CheckCircle class="w-5 h-5" /> Premium Plan
+              </div>
+              <div v-else class="text-muted-foreground font-bold text-lg">Free Plan</div>
+          </CardContent>
+      </Card>
       
-      <div class="p-8 rounded-3xl bg-zinc-900 border border-white/5">
-          <p class="text-zinc-500 font-medium mb-1">Total Notes</p>
-          <p class="text-2xl font-outfit font-bold">{{ noteCount }}</p>
-      </div>
+      <Card class="bg-card">
+          <CardHeader class="pb-2">
+              <CardDescription class="text-xs font-bold uppercase tracking-wider">Total Synced Notes</CardDescription>
+          </CardHeader>
+          <CardContent>
+              <p class="text-3xl font-outfit font-bold">{{ noteCount }}</p>
+          </CardContent>
+      </Card>
 
-       <div v-if="page.props.auth.user.is_admin" class="p-8 rounded-3xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-between">
-          <div>
-            <p class="text-blue-400 font-medium mb-1">Admin Panel</p>
-            <p class="text-sm text-blue-300/60 leading-tight">You have system access.</p>
-          </div>
-          <Link href="/admin" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-xl text-xs font-bold">Manage</Link>
-      </div>
+       <Card v-if="page.props.auth.user.is_admin" class="border-primary/20 bg-primary/5">
+          <CardHeader class="pb-2">
+            <CardDescription class="text-primary font-bold text-xs uppercase tracking-wider">System Administration</CardDescription>
+          </CardHeader>
+          <CardContent class="flex items-center justify-between">
+            <p class="text-sm text-primary/70">You have management access.</p>
+            <Button size="sm" as-child>
+                <Link href="/admin">Manage</Link>
+            </Button>
+          </CardContent>
+      </Card>
     </div>
 
     <!-- Notes Management -->
     <div class="mb-12">
-      <div class="flex justify-between items-center mb-6">
-        <h2 class="text-xl font-bold font-outfit">Cloud Saved Notes</h2>
-        <button @click="openNoteModal()" class="flex items-center gap-2 bg-white text-black px-4 py-2 rounded-xl font-bold text-sm">
+      <div class="flex justify-between items-center mb-8">
+        <div>
+            <h2 class="text-2xl font-bold font-outfit tracking-tight">Cloud Saved Notes</h2>
+            <p class="text-sm text-muted-foreground mt-1">Directly manage your notes from the web.</p>
+        </div>
+        <Button @click="openNoteDialog()" class="rounded-xl px-6 gap-2">
           <Plus class="w-4 h-4" /> New Note
-        </button>
+        </Button>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-         <div v-if="notes.length === 0" class="col-span-full py-20 text-center bg-zinc-900/50 rounded-3xl border border-dashed border-white/5 italic text-zinc-500">
-            No notes synced yet.
-         </div>
+         <Card v-if="notes.length === 0" class="col-span-full py-24 bg-accent/30 border-dashed">
+            <CardContent class="flex flex-col items-center justify-center text-center">
+                <div class="w-16 h-16 bg-accent rounded-full flex items-center justify-center mb-4">
+                    <Database class="w-8 h-8 text-muted-foreground" />
+                </div>
+                <p class="text-muted-foreground font-medium italic">No notes synced yet. Start adding notes on Twitter!</p>
+            </CardContent>
+         </Card>
          
-         <div v-for="note in notes" :key="note.id" class="p-6 rounded-3xl bg-zinc-900 border border-white/5 relative group">
-            <div class="flex items-center justify-between mb-4">
-               <span class="text-[10px] font-bold text-blue-500 uppercase">@{{ note.twitter_user_id }}</span>
-               <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button @click="openNoteModal(note)" class="text-zinc-500 hover:text-white"><Edit3 class="w-4 h-4" /></button>
-                  <button @click="deleteNote(note.id)" class="text-zinc-500 hover:text-red-500"><Trash class="w-4 h-4" /></button>
-               </div>
+         <Card v-for="note in notes" :key="note.id" class="group transition-all hover:shadow-md hover:border-primary/50 relative overflow-hidden flex flex-col">
+            <div class="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <DropdownMenu>
+                    <DropdownMenuTrigger as-child>
+                        <Button variant="ghost" size="icon" class="h-8 w-8"><MoreVertical class="w-4 h-4" /></Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem @click="openNoteDialog(note)" class="gap-2">
+                             <Edit3 class="w-4 h-4" /> Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem @click="deleteNote(note.id)" class="text-destructive gap-2">
+                            <Trash class="w-4 h-4" /> Delete
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </div>
-            <p class="text-sm text-zinc-300 whitespace-pre-wrap mb-4">{{ note.content }}</p>
-            <div class="text-[10px] text-zinc-600 uppercase">{{ formatDate(note.updated_at) }}</div>
-         </div>
+            
+            <CardHeader class="pb-2">
+               <Badge variant="outline" class="w-fit text-[10px] font-bold py-0 transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                   @{{ note.twitter_user_id }}
+               </Badge>
+            </CardHeader>
+            <CardContent class="pb-4 flex-1">
+               <p class="text-sm leading-relaxed whitespace-pre-wrap line-clamp-6 text-foreground/80">{{ note.content }}</p>
+            </CardContent>
+            <CardFooter class="pt-4 border-t bg-accent/20 flex justify-between items-center text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
+                <div class="flex items-center gap-1.5">
+                    <Clock class="w-3 h-3" />
+                    {{ formatDate(note.updated_at) }}
+                </div>
+                <div class="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <a :href="'https://twitter.com/' + note.twitter_user_id" target="_blank" class="flex items-center gap-1 hover:text-primary transition-colors">
+                        View Profile <ExternalLink class="w-2.5 h-2.5" />
+                    </a>
+                </div>
+            </CardFooter>
+         </Card>
       </div>
     </div>
 
     <!-- Tokens Section -->
-    <div class="bg-zinc-900 rounded-3xl border border-white/5 overflow-hidden mb-20">
-      <div class="p-8 border-b border-white/5 flex justify-between items-center bg-zinc-950/20">
-        <div class="flex items-center gap-3">
-          <Key class="w-6 h-6 text-zinc-400" />
-          <h2 class="text-xl font-bold font-outfit">Sync Tokens</h2>
+    <Card class="mb-20 overflow-hidden shadow-sm">
+      <CardHeader class="flex flex-row items-center justify-between border-b bg-accent/20 py-6">
+        <div class="flex items-center gap-4">
+          <div class="w-10 h-10 rounded-xl bg-card border flex items-center justify-center">
+              <Key class="w-5 h-5 text-muted-foreground" />
+          </div>
+          <div>
+            <CardTitle class="text-xl font-outfit">Sync Tokens</CardTitle>
+            <CardDescription>Use these tokens to connect your browser extension.</CardDescription>
+          </div>
         </div>
-        <button @click="showTokenModal = true" class="flex items-center gap-2 border border-white/10 hover:bg-white/5 px-4 py-2 rounded-xl font-bold text-xs transition-all">
-          Generate Token
-        </button>
-      </div>
+        <Button variant="outline" @click="showTokenDialog = true" class="rounded-xl gap-2 font-bold shadow-sm">
+          <Plus class="w-4 h-4" /> Generate Token
+        </Button>
+      </CardHeader>
 
-      <div class="p-0">
-        <table v-if="tokens.length > 0" class="w-full text-left">
-          <tbody class="divide-y divide-white/5 text-sm">
-            <tr v-for="token in tokens" :key="token.id">
-              <td class="px-8 py-4 font-medium">{{ token.name }}</td>
-              <td class="px-8 py-4 text-zinc-500">Last: {{ formatDate(token.last_used_at) }}</td>
-              <td class="px-8 py-4 text-right">
-                <button @click="useForm({}).delete(`/tokens/${token.id}`)" class="text-zinc-600 hover:text-red-400"><Trash2 class="w-4 h-4" /></button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+      <CardContent class="p-0">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+              <thead class="bg-accent/10">
+                <tr class="text-xs uppercase font-bold text-muted-foreground border-b">
+                    <th class="px-8 py-4">Device Name</th>
+                    <th class="px-8 py-4">Last Activity</th>
+                    <th class="px-8 py-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y text-sm">
+                <tr v-if="tokens.length === 0">
+                    <td colspan="3" class="px-8 py-10 text-center text-muted-foreground italic">No active tokens. Generate one to start syncing.</td>
+                </tr>
+                <tr v-for="token in tokens" :key="token.id" class="hover:bg-accent/10 transition-colors">
+                  <td class="px-8 py-5">
+                      <div class="flex items-center gap-3">
+                          <div class="w-2 h-2 rounded-full bg-primary" v-if="token.last_used_at"></div>
+                          <div class="w-2 h-2 rounded-full bg-muted" v-else></div>
+                          <span class="font-bold">{{ token.name }}</span>
+                      </div>
+                  </td>
+                  <td class="px-8 py-5 text-muted-foreground">
+                      {{ token.last_used_at ? formatDate(token.last_used_at) : 'Not used yet' }}
+                  </td>
+                  <td class="px-8 py-5 text-right">
+                    <Button variant="ghost" size="icon" class="text-muted-foreground hover:text-destructive hover:bg-destructive/10" @click="useForm({}).delete(`/tokens/${token.id}`)">
+                        <Trash2 class="w-4 h-4" />
+                    </Button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+        </div>
+      </CardContent>
+    </Card>
 
-    <!-- Settings / Delete -->
-    <div class="mt-20 border-t border-white/5 pt-12">
-       <div class="max-w-md">
-          <h3 class="text-red-500 font-bold mb-2">Danger Zone</h3>
-          <p class="text-zinc-500 text-sm mb-6">Once you delete your account, all your cloud data is permanently purged. We do not offer refunds.</p>
-          <button @click="showDeleteAccountModal = true" class="px-6 py-2 border border-red-500/20 text-red-500 hover:bg-red-500/10 rounded-xl text-xs font-bold transition-all">
+    <!-- Danger Zone -->
+    <Separator class="mb-12" />
+    <div class="mb-20">
+       <div class="max-w-xl">
+          <h3 class="text-destructive font-bold text-xl mb-3 flex items-center gap-2">
+              <AlertTriangle class="w-5 h-5" />
+              Danger Zone
+          </h3>
+          <p class="text-muted-foreground text-sm mb-6 leading-relaxed">
+             Deleting your account will permanently erase your synced data from our servers. 
+             Local data in your browser extension will remain until manually deleted there. 
+             <strong class="text-foreground">We do not offer refunds for remaining subscription time.</strong>
+          </p>
+          <Button variant="destructive" @click="showDeleteAccountDialog = true" class="rounded-xl font-bold px-8">
              Delete My Account
-          </button>
+          </Button>
        </div>
     </div>
 
     <!-- Modals (Token, Success, Error, Note, Delete) -->
-    <!-- Simplified Token Create -->
-    <div v-if="showTokenModal" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
-       <div class="bg-zinc-900 border border-white/10 p-8 rounded-[40px] max-w-sm w-full">
-          <h2 class="text-2xl font-bold mb-4 font-outfit">New Sync Token</h2>
-          <form @submit.prevent="createToken">
-             <input v-model="tokenForm.name" required placeholder="Device Name (e.g. Work PC)" class="w-full bg-zinc-950 border border-white/10 p-4 rounded-2xl mb-6 text-sm focus:border-blue-500 outline-none" />
-             <div class="flex gap-2">
-                <button @click="showTokenModal = false" type="button" class="flex-1 py-3 text-zinc-500 font-bold">Cancel</button>
-                <button type="submit" class="flex-1 py-3 bg-blue-600 rounded-2xl font-bold">Create</button>
-             </div>
-          </form>
-       </div>
-    </div>
-
-    <!-- Success Token -->
-    <div v-if="showSuccessModal" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
-       <div class="bg-zinc-900 border border-white/10 p-8 rounded-[40px] max-w-sm w-full">
-          <CheckCircle class="w-12 h-12 text-green-500 mb-6" />
-          <h2 class="text-2xl font-bold mb-4 font-outfit">Save Your Token</h2>
-          <div class="bg-zinc-950 p-4 rounded-2xl border border-dashed border-zinc-700 flex justify-between items-center mb-6">
-             <code class="text-blue-400 truncate text-xs">{{ generatedToken.plain }}</code>
-             <button @click="copyToken()"><Copy class="w-4 h-4" /></button>
-          </div>
-          <button @click="showSuccessModal = false" class="w-full py-4 bg-zinc-800 rounded-2xl font-bold">Close</button>
-       </div>
-    </div>
-
-    <!-- Account Delete Modal -->
-    <div v-if="showDeleteAccountModal" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
-       <div class="bg-zinc-900 border border-white/10 p-8 rounded-[40px] max-w-md w-full text-center">
-          <ShieldAlert class="w-16 h-16 text-red-500 mx-auto mb-6" />
-          <h2 class="text-2xl font-bold mb-2 font-outfit">Are you absolutely sure?</h2>
-          <p class="text-zinc-500 mb-8 px-4">This will permanently erase all your synced notes. <strong class="text-white font-bold">As per our policy, we do not offer refunds</strong> for remaining subscription time.</p>
-          <div class="flex flex-col gap-3">
-             <button @click="deleteAccount" class="w-full py-4 bg-red-600 rounded-2xl font-bold">Yes, Delete Everything</button>
-             <button @click="showDeleteAccountModal = false" class="w-full py-4 text-zinc-500 font-bold">Nevermind</button>
-          </div>
-       </div>
-    </div>
-
-    <!-- Note Modal -->
-    <div v-if="showNoteModal" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
-       <div class="bg-zinc-900 border border-white/10 p-8 rounded-[40px] max-w-md w-full">
-          <h2 class="text-2xl font-bold mb-4 font-outfit">{{ editingNote ? 'Edit Note' : 'New Note' }}</h2>
-          <form @submit.prevent="saveNote">
-             <div class="space-y-4">
-                <div>
-                   <label class="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Twitter Username/ID</label>
-                   <input v-model="noteForm.twitter_user_id" required placeholder="elonmusk" class="w-full bg-zinc-950 border border-white/10 p-4 rounded-2xl text-sm focus:border-blue-500 outline-none" />
+    
+    <!-- Token Create Dialog -->
+    <Dialog v-model:open="showTokenDialog">
+        <DialogContent class="sm:max-w-md">
+            <DialogHeader>
+                <DialogTitle>New Sync Token</DialogTitle>
+                <DialogDescription>Give your token a name to identify which device is using it.</DialogDescription>
+            </DialogHeader>
+            <form @submit.prevent="createToken">
+                <div class="space-y-4 py-4">
+                    <div class="space-y-2">
+                        <Label for="token-name">Device Name</Label>
+                        <Input id="token-name" v-model="tokenForm.name" required placeholder="e.g. My Laptop, Chrome at Work" />
+                    </div>
                 </div>
-                <div>
-                   <label class="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Note Content (Max 2000)</label>
-                   <textarea v-model="noteForm.content" required rows="6" maxlength="2000" placeholder="Type your note..." class="w-full bg-zinc-950 border border-white/10 p-4 rounded-2xl text-sm focus:border-blue-500 outline-none resize-none"></textarea>
+                <DialogFooter>
+                    <Button variant="ghost" type="button" @click="showTokenDialog = false">Cancel</Button>
+                    <Button type="submit" :disabled="tokenForm.processing">Create Token</Button>
+                </DialogFooter>
+            </form>
+        </DialogContent>
+    </Dialog>
+
+    <!-- Success Token Dialog -->
+    <Dialog v-model:open="showSuccessDialog">
+        <DialogContent class="sm:max-w-md border-primary/50">
+            <DialogHeader>
+                <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                    <CheckCircle class="w-6 h-6 text-primary" />
                 </div>
-             </div>
-             <div class="flex gap-2 mt-8">
-                <button @click="showNoteModal = false" type="button" class="flex-1 py-3 text-zinc-500 font-bold">Cancel</button>
-                <button type="submit" class="flex-1 py-3 bg-blue-600 rounded-2xl font-bold">{{ editingNote ? 'Update' : 'Save' }}</button>
-             </div>
-          </form>
-       </div>
-    </div>
+                <DialogTitle>Token Generated Successfully</DialogTitle>
+                <DialogDescription>
+                    Copy this token and paste it into your browser extension settings. 
+                    <span class="text-destructive font-bold underline italic">This is the only time you will see this token.</span>
+                </DialogDescription>
+            </DialogHeader>
+            <div class="bg-accent/50 p-4 rounded-xl border border-dashed flex justify-between items-center my-4 group">
+                 <code class="text-primary font-mono text-xs truncate mr-4">{{ generatedToken?.plain }}</code>
+                 <Button variant="ghost" size="icon" @click="copyToken()" class="shrink-0 hover:bg-primary hover:text-white transition-colors">
+                     <Copy class="w-4 h-4" />
+                 </Button>
+            </div>
+            <DialogFooter>
+                <Button variant="secondary" class="w-full" @click="showSuccessDialog = false">Finished</Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
+
+    <!-- Account Delete Dialog -->
+    <Dialog v-model:open="showDeleteAccountDialog">
+        <DialogContent class="sm:max-w-md border-destructive/50">
+            <DialogHeader>
+                <div class="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
+                    <ShieldAlert class="w-8 h-8 text-destructive" />
+                </div>
+                <DialogTitle class="text-center text-xl">Confirm Account Deletion</DialogTitle>
+                <DialogDescription class="text-center">
+                    This action is <span class="text-destructive font-bold">permanent</span>. 
+                    All cloud-synced notes will be deleted.
+                </DialogDescription>
+            </DialogHeader>
+            <div class="p-4 bg-accent/50 rounded-xl text-center text-sm border-2 border-destructive/20 border-dotted my-4">
+                <strong>No refunds policy:</strong> Remaining subscription time will not be refunded.
+            </div>
+            <DialogFooter class="flex flex-col gap-2">
+                <Button variant="destructive" class="w-full font-bold h-12" @click="deleteAccount">Yes, Delete Everything</Button>
+                <Button variant="ghost" class="w-full" @click="showDeleteAccountDialog = false">Keep My Account</Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
+
+    <!-- Note Dialog -->
+    <Dialog v-model:open="showNoteDialog">
+        <DialogContent class="sm:max-w-lg">
+            <DialogHeader>
+                <DialogTitle>{{ editingNote ? 'Edit Cloud Note' : 'Create New Cloud Note' }}</DialogTitle>
+                <DialogDescription>This note will be synced to your extension automatically.</DialogDescription>
+            </DialogHeader>
+            <form @submit.prevent="saveNote">
+                <div class="space-y-4 py-4">
+                    <div class="space-y-2">
+                        <Label for="twitter-id">Twitter Username/ID</Label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-2.5 text-muted-foreground font-bold">@</span>
+                            <Input id="twitter-id" v-model="noteForm.twitter_user_id" required placeholder="elonmusk" class="pl-7" />
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <Label for="note-content">Note Content (Max 2000 characters)</Label>
+                        <Textarea id="note-content" v-model="noteForm.content" required rows="6" maxlength="2000" placeholder="Write your private thoughts here..." class="resize-none" />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="ghost" type="button" @click="showNoteDialog = false">Cancel</Button>
+                    <Button type="submit" :disabled="noteForm.processing">{{ editingNote ? 'Update Note' : 'Save Note' }}</Button>
+                </DialogFooter>
+            </form>
+        </DialogContent>
+    </Dialog>
 
   </DashboardLayout>
 </template>
+
+<style scoped>
+.font-outfit { font-family: 'Outfit', sans-serif; }
+</style>
