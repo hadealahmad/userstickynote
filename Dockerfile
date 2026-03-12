@@ -1,4 +1,4 @@
-# Build for Laravel with PHP 8.4 (Matched to composer.lock requirements)
+# Robust Single-stage build for Laravel
 FROM php:8.4-fpm-alpine
 
 # Install system dependencies
@@ -42,9 +42,13 @@ RUN mkdir -p database && touch database/database.sqlite && chmod 777 database/da
 COPY backend/docker/nginx.conf /etc/nginx/http.d/default.conf
 COPY backend/docker/supervisord.conf /etc/supervisord.conf
 
+# Setup Entrypoint
+COPY backend/docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
 # Set permissions
 RUN chown -R www-data:www-data storage bootstrap/cache database
 
 EXPOSE 3000
 
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
