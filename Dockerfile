@@ -1,5 +1,5 @@
-# Robust Single-stage build for Laravel
-FROM php:8.3-fpm-alpine
+# Build for Laravel with PHP 8.4 (Matched to composer.lock requirements)
+FROM php:8.4-fpm-alpine
 
 # Install system dependencies
 RUN apk add --no-cache \
@@ -11,10 +11,11 @@ RUN apk add --no-cache \
     sqlite-dev \
     supervisor \
     nodejs \
-    npm
+    npm \
+    icu-dev
 
 # Install PHP extensions
-RUN docker-php-ext-install pdo_sqlite gd zip pcntl
+RUN docker-php-ext-install pdo_sqlite gd zip pcntl bcmath intl
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -38,7 +39,6 @@ RUN cp -a /app/backend/. .
 RUN mkdir -p database && touch database/database.sqlite && chmod 777 database/database.sqlite
 
 # Configure Nginx & Supervisor
-# Note: Paths are relative to the repository root (build context)
 COPY backend/docker/nginx.conf /etc/nginx/http.d/default.conf
 COPY backend/docker/supervisord.conf /etc/supervisord.conf
 
