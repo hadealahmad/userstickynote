@@ -1,59 +1,543 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Twitter Sticky Notes — Backend
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Laravel backend for the Twitter Sticky Notes Chrome extension. Provides user authentication, API token management, note storage, cloud sync, and Stripe-powered premium subscriptions.
 
-## About Laravel
+## Table of Contents
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- [Overview](#overview)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Database](#database)
+- [Authentication](#authentication)
+- [API Reference](#api-reference)
+- [Web Routes](#web-routes)
+- [Cloud Sync](#cloud-sync)
+- [Payments](#payments)
+- [Admin Panel](#admin-panel)
+- [Deployment](#deployment)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+---
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Overview
 
-## Learning Laravel
+This backend serves two purposes:
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+1. **Web Dashboard** — Inertia.js + Vue 3 frontend where users manage their account, API tokens, and notes.
+2. **Extension API** — RESTful API consumed by the Chrome extension for note CRUD and cloud sync.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+The application uses Google OAuth for authentication and Stripe for payment processing. Cloud sync is a premium feature ($1/year) that allows notes to be synced across devices.
 
-## Laravel Sponsors
+---
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## Tech Stack
 
-### Premium Partners
+- **PHP 8.2+**
+- **Laravel 12** — Application framework
+- **Inertia.js** — Server-side rendering bridge (Vue 3 frontend)
+- **Laravel Socialite** — Google OAuth integration
+- **Stripe** — Payment processing and webhooks
+- **SQLite** (default) / MySQL / PostgreSQL — Database
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+---
 
-## Contributing
+## Project Structure
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```
+backend/
+├── app/
+│   ├── Http/
+│   │   ├── Controllers/
+│   │   │   ├── Api/
+│   │   │   │   └── NoteController.php      # Extension API: note CRUD + sync
+│   │   │   ├── AuthController.php          # Google OAuth flow
+│   │   │   ├── DashboardController.php     # Web dashboard + token management
+│   │   │   ├── StripeController.php        # Checkout session + webhook handler
+│   │   │   ├── WebNoteController.php       # Web-based note CRUD
+│   │   │   └── AdminController.php         # Admin dashboard
+│   │   └── Middleware/
+│   │       └── ApiTokenAuth.php            # Bearer token authentication
+│   └── Models/
+│       ├── User.php                        # User model (OAuth, subscription)
+│       ├── ApiToken.php                    # API token model (hashed storage)
+│       └── Note.php                        # Note model (Twitter user notes)
+├── config/
+│   └── services.php                        # Third-party service credentials
+├── database/
+│   ├── migrations/                         # Database schema migrations
+│   ├── factories/                          # Model factories for testing
+│   └── seeders/                            # Database seeders
+├── routes/
+│   └── web.php                             # All routes (web + API)
+├── resources/                              # Inertia.js pages and assets
+├── composer.json
+└── .env.example
+```
 
-## Code of Conduct
+---
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Requirements
 
-## Security Vulnerabilities
+- PHP 8.2 or higher
+- Composer
+- Node.js 18+ and npm/bun
+- SQLite (default) or MySQL/PostgreSQL
+- Google OAuth credentials
+- Stripe account (for payments)
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+---
+
+## Installation
+
+```bash
+# Clone and enter directory
+cd backend
+
+# Install PHP dependencies
+composer install
+
+# Install Node dependencies
+npm install
+
+# Environment setup
+cp .env.example .env
+php artisan key:generate
+
+# Configure your .env file (see Configuration section)
+
+# Run database migrations
+php artisan migrate
+
+# Build frontend assets
+npm run build
+
+# Start development server
+composer run dev
+```
+
+The `composer run dev` command starts four processes concurrently:
+- PHP development server (`php artisan serve`)
+- Queue worker (`php artisan queue:listen`)
+- Log viewer (`php artisan pail`)
+- Vite dev server (`npm run dev`)
+
+---
+
+## Configuration
+
+### Environment Variables
+
+Copy `.env.example` to `.env` and configure the following:
+
+```env
+# Application
+APP_NAME="Twitter Sticky Notes"
+APP_ENV=local
+APP_KEY=                    # Generated by php artisan key:generate
+APP_URL=http://localhost:8000
+
+# Database (SQLite default)
+DB_CONNECTION=sqlite
+# For MySQL:
+# DB_HOST=127.0.0.1
+# DB_PORT=3306
+# DB_DATABASE=sticky_notes
+# DB_USERNAME=root
+# DB_PASSWORD=
+
+# Google OAuth
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_REDIRECT_URI="${APP_URL}/auth/google/callback"
+
+# Stripe
+STRIPE_KEY=pk_test_         # Publishable key
+STRIPE_SECRET=sk_test_      # Secret key
+STRIPE_WEBHOOK_SECRET=whsec_  # Webhook signing secret
+```
+
+### Google OAuth Setup
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select existing
+3. Enable Google+ API
+4. Create OAuth 2.0 credentials (Web application)
+5. Add authorized redirect URI: `{APP_URL}/auth/google/callback`
+6. Copy Client ID and Client Secret to `.env`
+
+### Stripe Setup
+
+1. Create a [Stripe account](https://stripe.com/)
+2. Get API keys from Dashboard → Developers → API keys
+3. Create a webhook endpoint pointing to `{APP_URL}/webhooks/stripe`
+4. Select event: `checkout.session.completed`
+5. Copy webhook signing secret to `.env`
+
+---
+
+## Database
+
+### Schema
+
+#### users
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | bigint | Primary key |
+| `google_id` | string | Google OAuth ID (unique, nullable) |
+| `name` | string | Display name |
+| `email` | string | Email address (unique) |
+| `google_avatar` | string | Google avatar URL (nullable) |
+| `is_admin` | boolean | Admin flag (default: false) |
+| `is_subscribed` | boolean | Premium subscription status (default: false) |
+| `subscription_ends_at` | timestamp | Subscription expiry (nullable) |
+| `password` | string | Hashed password (nullable — OAuth only) |
+| `created_at` | timestamp | Creation date |
+| `updated_at` | timestamp | Last update |
+
+#### api_tokens
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | bigint | Primary key |
+| `user_id` | bigint | Foreign key to users (cascade delete) |
+| `name` | string | Token label (max 60 chars) |
+| `token` | string(64) | SHA-256 hashed token (unique) |
+| `last_used_at` | timestamp | Last usage timestamp (nullable) |
+| `created_at` | timestamp | Creation date |
+| `updated_at` | timestamp | Last update |
+
+#### notes
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | bigint | Primary key |
+| `user_id` | bigint | Foreign key to users (cascade delete) |
+| `twitter_user_id` | string | Twitter user identifier |
+| `twitter_username` | string | Twitter username (nullable) |
+| `content` | text | Note content (max 2000 chars) |
+| `source_url` | string | Source tweet/profile URL (nullable) |
+| `client_id` | string | Client-generated UUID for upsert (nullable) |
+| `created_at` | timestamp | Creation date |
+| `updated_at` | timestamp | Last update |
+
+**Indexes:**
+- Composite index on `(user_id, twitter_user_id)`
+- Unique constraint on `(user_id, client_id)` — enables upsert during sync
+
+---
+
+## Authentication
+
+The application uses two authentication methods:
+
+### 1. Session-Based (Web Dashboard)
+
+Users authenticate via Google OAuth through the web interface:
+
+```
+GET  /auth/google           → Redirect to Google
+GET  /auth/google/callback  → Handle OAuth callback, create/login user
+POST /auth/logout           → Destroy session
+```
+
+Laravel's built-in session middleware protects web routes.
+
+### 2. API Token-Based (Extension API)
+
+The Chrome extension authenticates using API tokens:
+
+1. User generates a token from the web dashboard
+2. Token is hashed (SHA-256) and stored in `api_tokens` table
+3. Extension sends token via `Authorization: Bearer <token>` header
+4. `ApiTokenAuth` middleware validates the token and resolves the user
+
+**Token Security:**
+- Plain tokens are shown only once upon creation
+- Only the SHA-256 hash is stored in the database
+- Tokens can be revoked by deleting them from the dashboard
+
+---
+
+## API Reference
+
+All API endpoints require authentication via Bearer token.
+
+### Get User Info
+
+```http
+GET /api/user
+Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+{
+  "id": 1,
+  "name": "John Doe",
+  "email": "john@example.com",
+  "is_subscribed": true,
+  "subscription_ends_at": "2026-01-15T00:00:00.000000Z"
+}
+```
+
+### Get All Notes
+
+```http
+GET /api/notes
+Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+{
+  "notes": [
+    {
+      "id": 1,
+      "twitter_user_id": "123456",
+      "twitter_username": "example_user",
+      "content": "This is a note",
+      "source_url": "https://x.com/example_user/status/123",
+      "client_id": "uuid-from-extension",
+      "created_at": "2025-01-15T10:30:00.000000Z",
+      "updated_at": "2025-01-15T10:30:00.000000Z"
+    }
+  ]
+}
+```
+
+### Create/Update Note
+
+```http
+POST /api/notes
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "twitter_user_id": "123456",
+  "twitter_username": "example_user",
+  "content": "This is a note",
+  "source_url": "https://x.com/example_user/status/123",
+  "client_id": "uuid-from-extension"
+}
+```
+
+**Response:** `201 Created`
+```json
+{
+  "note": { ... }
+}
+```
+
+**Note:** Requires active subscription (`is_subscribed: true`). Returns `402 Payment Required` otherwise. The same restriction applies to web dashboard note operations.
+
+### Delete Note
+
+```http
+DELETE /api/notes/{id}
+Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+{
+  "message": "Deleted"
+}
+```
+
+### Full Sync
+
+```http
+POST /api/sync
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "notes": [
+    {
+      "twitter_user_id": "123456",
+      "twitter_username": "example_user",
+      "content": "Note content",
+      "source_url": "https://x.com/...",
+      "client_id": "uuid-1"
+    }
+  ]
+}
+```
+
+**Response:**
+```json
+{
+  "synced": 5,
+  "notes": [ ... ]
+}
+```
+
+**Behavior:**
+- Upserts notes by `(user_id, client_id)` — matching notes are updated, new ones are created
+- Returns the complete merged state of all user notes
+- Requires active subscription
+
+---
+
+## Web Routes
+
+### Public Routes
+
+| Method | URI | Description |
+|--------|-----|-------------|
+| `GET` | `/` | Landing page |
+| `GET` | `/auth/google` | Initiate Google OAuth |
+| `GET` | `/auth/google/callback` | OAuth callback |
+| `POST` | `/webhooks/stripe` | Stripe webhook (verified by signature) |
+
+### Authenticated Routes
+
+| Method | URI | Description |
+|--------|-----|-------------|
+| `GET` | `/dashboard` | User dashboard |
+| `POST` | `/tokens` | Create new API token |
+| `DELETE` | `/tokens/{id}` | Delete API token |
+| `DELETE` | `/account` | Delete user account and all data |
+| `GET` | `/billing/checkout` | Create Stripe checkout session |
+| `POST` | `/notes` | Create note (web UI) |
+| `PUT` | `/notes/{note}` | Update note (web UI) |
+| `DELETE` | `/notes/{note}` | Delete note (web UI) |
+
+### Admin Routes
+
+| Method | URI | Description |
+|--------|-----|-------------|
+| `GET` | `/admin` | Admin dashboard (requires `is_admin`) |
+
+---
+
+## Cloud Sync
+
+Cloud sync allows users to access their notes across multiple devices.
+
+### Sync Flow
+
+1. **User subscribes** — Pays $1/year via Stripe checkout
+2. **Generates API token** — From the web dashboard
+3. **Configures extension** — Pastes token into extension settings
+4. **Notes sync** — Automatically on save, or manually via "Sync Now"
+
+### Sync Mechanism
+
+The `/api/sync` endpoint implements a simple merge strategy:
+
+1. Extension sends all local notes with their `client_id`s
+2. Backend upserts each note by `(user_id, client_id)`
+3. Backend returns the complete set of all user notes
+4. Extension replaces local storage with server state
+
+This ensures consistency across devices while handling conflicts by timestamp (latest update wins).
+
+### Subscription Enforcement
+
+An active subscription (`is_subscribed: true`) is required for all write operations across both the Extension API and Web Dashboard.
+
+| Interface | Endpoint | Subscription Required | Description |
+|-----------|----------|----------------------|-------------|
+| Extension API | `GET /api/notes` | No | Read existing cloud notes |
+| Extension API | `GET /api/user` | No | Check subscription status |
+| Extension API | `DELETE /api/notes/{id}` | No | Delete a note |
+| Extension API | `POST /api/notes` | Yes | Create/update a note (returns `402`) |
+| Extension API | `POST /api/sync` | Yes | Full sync (returns `402`) |
+| Web Dashboard | `POST /notes` | Yes | Create note (redirects with error) |
+| Web Dashboard | `PUT /notes/{note}` | Yes | Update note (redirects with error) |
+| Web Dashboard | `DELETE /notes/{note}` | Yes | Delete note (redirects with error) |
+
+Users without an active subscription can still **read** their existing cloud notes but cannot **create, update, or delete** notes through any interface. If a subscription lapses, existing data remains accessible as read-only.
+
+---
+
+## Payments
+
+### Stripe Checkout
+
+The application uses Stripe Checkout for one-time payments ($1/year subscription).
+
+**Flow:**
+1. User clicks "Upgrade to Premium" on dashboard
+2. Server creates a Stripe Checkout Session
+3. User is redirected to Stripe-hosted payment page
+4. On success, user is redirected back to dashboard
+
+### Webhook Handling
+
+Stripe sends `checkout.session.completed` events to `/webhooks/stripe`.
+
+The webhook handler:
+1. Verifies the Stripe signature
+2. Extracts `user_id` from session metadata
+3. Updates user: `is_subscribed = true`, `subscription_ends_at = now + 1 year`
+
+**Important:** Configure webhook endpoint in Stripe Dashboard:
+- URL: `https://your-domain.com/webhooks/stripe`
+- Events: `checkout.session.completed`
+
+---
+
+## Admin Panel
+
+Admin users (with `is_admin = true`) can access `/admin` to view:
+
+- List of all users
+- Note counts per user
+- User registration dates
+
+To make a user an admin, update the database directly:
+
+```sql
+UPDATE users SET is_admin = 1 WHERE email = 'admin@example.com';
+```
+
+---
+
+## Deployment
+
+### Production Checklist
+
+1. **Environment**
+   - Set `APP_ENV=production`
+   - Set `APP_DEBUG=false`
+   - Use strong `APP_KEY`
+
+2. **Database**
+   - Use MySQL or PostgreSQL for production
+   - Run migrations: `php artisan migrate --force`
+
+3. **Caching**
+   - Cache config: `php artisan config:cache`
+   - Cache routes: `php artisan route:cache`
+   - Cache views: `php artisan view:cache`
+
+4. **Queue Worker**
+   - Set up supervisor or similar to run `php artisan queue:work`
+
+5. **Stripe Webhook**
+   - Configure production webhook URL in Stripe Dashboard
+   - Verify webhook signature secret is set
+
+6. **SSL**
+   - Ensure HTTPS is configured
+   - Update `APP_URL` to use `https://`
+
+### Docker
+
+A `Dockerfile` is included for containerized deployment:
+
+```bash
+docker build -t sticky-notes-backend .
+docker run -p 8000:8000 sticky-notes-backend
+```
+
+---
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+MIT License — see [LICENSE](../LICENSE) for details.
