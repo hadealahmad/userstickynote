@@ -34,3 +34,13 @@ yarn-error.log
 
 # OS
 .DS_Store
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Misc
+.phpunit.result.cache
+.automated-test-logs/
