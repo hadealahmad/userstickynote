@@ -1,48 +1,40 @@
-# Single-stage build for Laravel (Backend only)
+# Multi-stage build (Mono-repo structure preservation)
+FROM php:8.3-fpm-alpine as composer-builder
+RUN apk add --no-cache unzip libzip-dev zip
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+WORKDIR /app/backend
+COPY backend/composer.json backend/composer.lock ./
+RUN composer install --no-dev --no-scripts --no-autoloader
+COPY backend/app ./app
+COPY backend/database ./database
+RUN composer dump-autoload --no-dev --optimize
+
+FROM oven/bun:latest as frontend-builder
+WORKDIR /app
+# Copy the entire mono-repo
+COPY . .
+# Layer in the vendor dependencies into the backend folder
+COPY --from=composer-builder /app/backend/vendor ./backend/vendor
+WORKDIR /app/backend
+RUN bun install
+RUN bun run build
+
 FROM php:8.3-fpm-alpine
-
-# Install system dependencies
-RUN apk add --no-cache \
-    nginx \
-    libpng-dev \
-    libzip-dev \
-    zip \
-    unzip \
-    sqlite-dev \
-    supervisor \
-    nodejs \
-    npm
-
-# Install PHP extensions
+RUN apk add --no-cache nginx libpng-dev libzip-dev zip unzip sqlite-dev supervisor
 RUN docker-php-ext-install pdo_sqlite gd zip pcntl
-
-# Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
-
-# Copy backend files from the 'backend' folder in the repo to the root of the container
+# Copy backend source
 COPY backend/ .
+# Copy vendor and assets
+COPY --from=composer-builder /app/backend/vendor ./vendor
+COPY --from=frontend-builder /app/backend/public/build ./public/build
 
-# Install PHP dependencies
-RUN composer install --no-dev --optimize-autoloader
-
-# Install JS dependencies and build (using npm for simplicity in this stage)
-RUN npm install
-RUN npm run build
-
-# Setup SQLite database placeholder
 RUN mkdir -p database && touch database/database.sqlite && chmod 777 database/database.sqlite
-
-# Configure Nginx (Path is relative to backend/ since we copied contents)
-COPY docker/nginx.conf /etc/nginx/http.d/default.conf
-
-# Configure Supervisor
-COPY docker/supervisord.conf /etc/supervisord.conf
-
-# Set permissions
+COPY backend/docker/nginx.conf /etc/nginx/http.d/default.conf
+COPY backend/docker/supervisord.conf /etc/supervisord.conf
 RUN chown -R www-data:www-data storage bootstrap/cache database
 
 EXPOSE 3000
-
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
