@@ -24,23 +24,22 @@ export class StorageService {
 
   static async getSettings(): Promise<Settings> {
     return new Promise((resolve) => {
-      if (typeof chrome !== 'undefined' && chrome.storage) {
+      const defaults: Settings = {
+        apiToken: '',
+        syncMode: 'local',
+        apiUrl: this.DEFAULT_API_URL,
+        isSubscribed: false
+      };
+
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
         chrome.storage.local.get(['settings'], (result) => {
-          resolve(result.settings || {
-            apiToken: '',
-            syncMode: 'local',
-            apiUrl: this.DEFAULT_API_URL,
-            isSubscribed: false
-          });
+          const stored = result.settings || {};
+          resolve({ ...defaults, ...stored });
         });
       } else {
         const raw = localStorage.getItem('settings');
-        resolve(raw ? JSON.parse(raw) : {
-          apiToken: '',
-          syncMode: 'local',
-          apiUrl: this.DEFAULT_API_URL,
-          isSubscribed: false
-        });
+        const stored = raw ? JSON.parse(raw) : {};
+        resolve({ ...defaults, ...stored });
       }
     });
   }
