@@ -123,7 +123,7 @@ const user = computed(() => page.props.auth?.user);
                         as-child
                         class="h-14 px-8 rounded-2xl text-lg font-bold gap-3"
                     >
-                        <a href="/downloads/twitter-sticky-notes.zip">
+                        <a href="/downloads/username-sticky-notes.zip">
                             <Download class="w-5 h-5" />
                             Download Extension
                         </a>
@@ -221,7 +221,7 @@ const user = computed(() => page.props.auth?.user);
                                 class="w-full rounded-xl py-6"
                                 as-child
                             >
-                                <a href="/downloads/twitter-sticky-notes.zip"
+                                <a href="/downloads/username-sticky-notes.zip"
                                     >Download Extension</a
                                 >
                             </Button>
