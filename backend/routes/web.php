@@ -50,6 +50,12 @@ Route::prefix('api')->middleware(ApiTokenAuth::class)->group(function () {
     Route::get('/notes', [NoteController::class, 'index']);
     Route::post('/notes', [NoteController::class, 'store']);
     Route::delete('/notes/{id}', [NoteController::class, 'destroy']);
+    Route::get('/debug-headers', function (Request $request) {
+        return response()->json([
+            'headers' => $request->headers->all(),
+            'token' => $request->bearerToken()
+        ]);
+    });
     Route::post('/sync', [NoteController::class, 'sync']);
 });
 

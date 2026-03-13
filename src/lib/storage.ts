@@ -105,6 +105,7 @@ export class StorageService {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${settings.apiToken}`,
+            'X-Api-Token': settings.apiToken,
             'Content-Type': 'application/json',
             'Accept': 'application/json'
           },
@@ -189,6 +190,7 @@ export class StorageService {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${settings.apiToken}`,
+          'X-Api-Token': settings.apiToken,
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
@@ -235,6 +237,7 @@ export class StorageService {
       const response = await fetch(`${settings.apiUrl}/api/user`, {
         headers: {
           'Authorization': `Bearer ${settings.apiToken}`,
+          'X-Api-Token': settings.apiToken,
           'Accept': 'application/json'
         }
       });
