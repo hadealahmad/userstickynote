@@ -11,17 +11,23 @@ class ApiTokenAuth
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $bearerToken = $request->bearerToken() ?: $request->header('X-Api-Token');
+        $bearerToken = $request->bearerToken();
+        $xToken = $request->header('X-Api-Token');
+        
+        \Illuminate\Support\Facades\Log::info("Auth Attempt - Bearer: " . ($bearerToken ? 'Yes' : 'No') . " | X-Token: " . ($xToken ? 'Yes' : 'No'));
 
-        if (!$bearerToken) {
+        $token = $bearerToken ?: $xToken;
+ 
+        if (!$token) {
+            \Illuminate\Support\Facades\Log::warning("No token found in request headers");
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
-
-        $hashedToken = hash('sha256', $bearerToken);
-        
+ 
+        $hashedToken = hash('sha256', $token);
         $tokenRecord = ApiToken::where('token', $hashedToken)->first();
  
         if (!$tokenRecord) {
+            \Illuminate\Support\Facades\Log::warning("Invalid token hash: {$hashedToken}");
             return response()->json(['error' => 'Invalid token'], 401);
         }
 
