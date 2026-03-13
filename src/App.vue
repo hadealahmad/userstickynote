@@ -3,7 +3,7 @@
     <!-- Navigation Tabs -->
     <div class="flex items-center justify-between mb-4 pb-2 border-b">
       <div class="flex items-center gap-2">
-        <StickyNoteIcon class="w-5 h-5 text-yellow-500 fill-yellow-500/20" />
+        <img src="/logo.svg" class="w-5 h-5" alt="Logo" />
         <h1 class="text-sm font-bold font-outfit tracking-tight">Username Sticky Notes</h1>
       </div>
       <div class="flex items-center gap-1">
@@ -46,7 +46,7 @@
             <p>No matches for "{{ searchQuery }}"</p>
         </div>
         <div v-else class="space-y-2">
-            <StickyNoteIcon class="w-10 h-10 mx-auto opacity-10" />
+            <img src="/logo.svg" class="w-10 h-10 mx-auto opacity-10" alt="Logo" />
             <p>No sticky notes found.<br/>Go to Twitter and attach a note!</p>
         </div>
       </div>

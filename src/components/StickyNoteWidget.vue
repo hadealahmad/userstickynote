@@ -13,7 +13,12 @@
           }"
           :title="hasNotes ? 'View Notes' : 'Add Note'"
         >
-          <StickyNoteIcon :size="!isProfile ? 16 : 20" :class="{ 'fill-yellow-500 text-yellow-500': hasNotes, 'text-zinc-400/50': !hasNotes && !isProfile, 'text-[rgb(239,243,244)]': !hasNotes && isProfile }" />
+          <img 
+            src="/logo.svg" 
+            :style="{ width: (!isProfile ? '16px' : '20px'), height: (!isProfile ? '16px' : '20px') }"
+            :class="{ 'opacity-100': hasNotes, 'opacity-40 grayscale': !hasNotes }"
+            alt="Sticky Note" 
+          />
         </button>
       </PopoverTrigger>
       <!-- We explicitly use tailwind scoping to avoid Twitter styles overriding it -->
@@ -21,7 +26,7 @@
         <div class="flex flex-col max-h-[80vh]">
           <div class="p-4 border-b bg-muted/30 flex items-center justify-between">
             <div class="flex items-center gap-2">
-              <StickyNoteIcon class="w-4 h-4 text-yellow-500" />
+              <img src="/logo.svg" class="w-4 h-4" alt="Logo" />
               <h4 class="font-bold text-sm tracking-tight font-sans">Notes for @{{ username }}</h4>
             </div>
             <Badge variant="outline" class="text-[9px] px-1.5 py-0 uppercase tracking-widest">{{ notes.length }}</Badge>

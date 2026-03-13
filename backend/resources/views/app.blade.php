@@ -3,9 +3,10 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="description" content="Private sticky notes for anyone on Twitter. Keep track of context, thoughts, and reminders directly on user profiles.">
 
-        <title inertia>{{ config('app.name', 'Laravel') }}</title>
-        <link rel="icon" href="/favicon.ico" type="image/x-icon">
+        <title inertia>{{ config('app.name', 'Username Sticky Notes') }}</title>
+        <link rel="icon" href="/logo.svg" type="image/svg+xml">
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.googleapis.com">

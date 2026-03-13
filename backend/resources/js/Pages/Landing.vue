@@ -42,9 +42,9 @@ const user = computed(() => page.props.auth?.user);
             >
                 <div class="flex items-center gap-3 group cursor-pointer">
                     <div
-                        class="w-10 h-10 rounded-xl bg-yellow-500 flex items-center justify-center transition-transform group-hover:rotate-6 shadow-lg shadow-yellow-500/20"
+                        class="w-10 h-10 rounded-xl bg-yellow-500/10 flex items-center justify-center transition-transform group-hover:rotate-6 border border-yellow-500/20"
                     >
-                        <StickyNote class="w-6 h-6 text-black fill-black/20" />
+                        <img src="/logo.svg" class="w-6 h-6" alt="Logo" />
                     </div>
                     <div class="flex flex-col">
                         <span class="font-outfit font-bold text-lg leading-none tracking-tight">Username</span>
@@ -298,7 +298,7 @@ const user = computed(() => page.props.auth?.user);
                 class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8 text-muted-foreground"
             >
                 <div class="flex items-center gap-3">
-                    <StickyNote class="w-5 h-5 text-yellow-500" />
+                    <img src="/logo.svg" class="w-5 h-5" alt="Logo" />
                     <span class="font-bold text-foreground">Username Sticky Notes</span>
                     <Separator orientation="vertical" class="h-4 mx-2" />
                     <span class="text-xs">© 2026</span>

@@ -30,8 +30,8 @@ const page = usePage();
       <div class="flex flex-col h-full">
         <div class="p-6">
           <Link href="/" class="flex items-center gap-3 mb-10 group">
-            <div class="w-10 h-10 rounded-xl bg-yellow-500 flex items-center justify-center transition-transform group-hover:rotate-6 shadow-lg shadow-yellow-500/20">
-              <StickyNote class="w-6 h-6 text-black fill-black/20" />
+            <div class="w-10 h-10 rounded-xl bg-yellow-500/10 flex items-center justify-center transition-transform group-hover:rotate-6 border border-yellow-500/20">
+              <img src="/logo.svg" class="w-6 h-6" alt="Logo" />
             </div>
             <div class="flex flex-col">
               <span class="font-outfit font-bold text-lg leading-none tracking-tight">Username</span>
