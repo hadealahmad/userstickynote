@@ -94,7 +94,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { StickyNote as StickyNoteIcon, Trash as TrashIcon, Pencil as PencilIcon, Link as LinkIcon } from 'lucide-vue-next'
+import { Trash as TrashIcon, Pencil as PencilIcon, Link as LinkIcon } from 'lucide-vue-next'
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover/index'
 import { Button } from './ui/button/index'
 import { Textarea } from './ui/textarea/index'

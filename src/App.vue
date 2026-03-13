@@ -147,7 +147,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, reactive, computed } from 'vue'
-import { StickyNote as StickyNoteIcon, Trash as TrashIcon, Settings as SettingsIcon, RefreshCw as RefreshCwIcon, Cloud as CloudIcon, CheckCircle, CreditCard, ArrowUpRight, Link as LinkIcon, Search } from 'lucide-vue-next'
+import { Trash as TrashIcon, Settings as SettingsIcon, RefreshCw as RefreshCwIcon, Cloud as CloudIcon, CheckCircle, CreditCard, ArrowUpRight, Link as LinkIcon, Search } from 'lucide-vue-next'
 import { Card, CardContent, CardFooter } from './components/ui/card/index'
 import { Button } from './components/ui/button/index'
 import { Input } from './components/ui/input/index'

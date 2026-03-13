@@ -2,7 +2,6 @@
 import { Link, Head, usePage } from "@inertiajs/vue3";
 import { computed } from "vue";
 import {
-    StickyNote,
     Zap,
     Share2,
     Lock,

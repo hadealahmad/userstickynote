@@ -1,6 +1,6 @@
 <script setup>
 import { Link, usePage } from '@inertiajs/vue3';
-import { StickyNote, LogOut, LayoutDashboard, Database, User, Settings, ShieldCheck } from 'lucide-vue-next';
+import { LogOut, LayoutDashboard, Database, User, Settings, ShieldCheck } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
