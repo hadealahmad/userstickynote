@@ -9,6 +9,7 @@ RUN apk add --no-cache \
     zip \
     unzip \
     sqlite-dev \
+    postgresql-dev \
     supervisor \
     nodejs \
     npm \
