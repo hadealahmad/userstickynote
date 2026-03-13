@@ -123,7 +123,7 @@ const formatDate = (date) => {
                </div>
                <div>
                   <h3 class="font-bold text-xl mb-1">Cloud Sync is Inactive</h3>
-                  <p class="text-muted-foreground text-sm max-w-md">Unlock multi-device sync, web management, and priority features for just $1/year.</p>
+                  <p class="text-muted-foreground text-sm max-w-md">Unlock multi-device sync, web management, and priority features for just $3/year.</p>
                </div>
             </div>
             <Button size="lg" as-child class="bg-orange-500 hover:bg-orange-600 text-white rounded-xl px-8 font-bold">

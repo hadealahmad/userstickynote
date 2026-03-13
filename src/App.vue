@@ -60,7 +60,7 @@
            <CloudIcon class="w-12 h-12 text-blue-500 mx-auto opacity-50" />
            <div class="space-y-1">
              <h4 class="font-bold">Sync across devices</h4>
-             <p class="text-[11px] text-zinc-400">Save notes to the cloud and access them everywhere for $1/year.</p>
+             <p class="text-[11px] text-zinc-400">Save notes to the cloud and access them everywhere for $3/year.</p>
            </div>
            <button @click="StorageService.loginWithGoogle()" class="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded-2xl font-bold flex items-center justify-center gap-2">
              <CreditCard class="w-4 h-4" />

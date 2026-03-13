@@ -42,7 +42,7 @@ Twitter Sticky Notes is a two-part application:
 - **Multiple Notes**: Add, edit, and keep track of multiple notes per Twitter user.
 - **Context Source**: Notes capture the source tweet or profile URL so you can trace your thoughts back.
 - **Local Storage**: Notes are stored locally using Chrome Storage API — works offline.
-- **Cloud Sync (Premium)**: Sync notes across devices for $1/year via Stripe.
+- **Cloud Sync (Premium)**: Sync notes across devices for $3/year via Stripe.
 - **Modern UI**: Built with Shadcn-Vue components, dark mode support, and Vue 3 reactivity.
 - **Web Dashboard**: Manage notes, API tokens, and account settings via the web interface.
 
@@ -349,12 +349,12 @@ composer run dev
 
 ## Cloud Sync
 
-Cloud sync is a premium feature ($1/year) that allows notes to be synced across devices.
+Cloud sync is a premium feature ($3/year) that allows notes to be synced across devices.
 
 ### How It Works
 
 1. User signs up via Google OAuth on the web dashboard
-2. User pays $1/year via Stripe checkout
+2. User pays $3/year via Stripe checkout
 3. User generates an API token from the dashboard
 4. User pastes the token into the extension settings
 5. Notes sync automatically when saved, or manually via "Sync Now"
@@ -413,6 +413,8 @@ GOOGLE_REDIRECT_URI="${APP_URL}/auth/google/callback"
 STRIPE_KEY=pk_test_
 STRIPE_SECRET=sk_test_
 STRIPE_WEBHOOK_SECRET=whsec_
+# Admin
+ADMIN_EMAIL=
 ```
 
 ---

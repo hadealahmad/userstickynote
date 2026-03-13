@@ -26,6 +26,15 @@ class AuthController extends Controller
             ]
         );
 
+        // Auto Admin Logic
+        if (env('ADMIN_EMAIL') && $user->email === env('ADMIN_EMAIL')) {
+            $user->update([
+                'is_admin' => true,
+                'is_subscribed' => true,
+                'subscription_ends_at' => now()->addYears(100),
+            ]);
+        }
+
         auth()->login($user, true);
 
         return redirect()->route('dashboard');

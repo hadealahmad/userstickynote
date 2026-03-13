@@ -41,10 +41,13 @@ const page = usePage();
           <div class="p-4 rounded-2xl bg-accent/50 border flex flex-col gap-3">
             <div class="flex items-center gap-3">
                <div class="relative">
-                  <img :src="$page.props.auth.user.google_avatar" class="w-10 h-10 rounded-full border" alt="Avatar" />
-                  <div v-if="$page.props.auth.user.is_subscribed" class="absolute -bottom-1 -right-1 w-4 h-4 bg-primary rounded-full border-2 border-background flex items-center justify-center">
-                     <div class="w-1.5 h-1.5 bg-white rounded-full"></div>
-                  </div>
+                 <Avatar class="w-10 h-10 border">
+                    <AvatarImage :src="$page.props.auth.user.google_avatar" alt="Avatar" />
+                    <AvatarFallback>{{ $page.props.auth.user.name.charAt(0) }}</AvatarFallback>
+                 </Avatar>
+                 <div v-if="$page.props.auth.user.is_subscribed" class="absolute -bottom-1 -right-1 w-4 h-4 bg-primary rounded-full border-2 border-background flex items-center justify-center">
+                    <div class="w-1.5 h-1.5 bg-white rounded-full"></div>
+                 </div>
                </div>
                <div class="overflow-hidden">
                  <p class="font-bold truncate text-sm">{{ $page.props.auth.user.name }}</p>
