@@ -14,7 +14,7 @@
           :title="hasNotes ? 'View Notes' : 'Add Note'"
         >
           <img 
-            src="/logo.svg" 
+            :src="logoUrl" 
             :style="{ width: (!isProfile ? '16px' : '20px'), height: (!isProfile ? '16px' : '20px') }"
             :class="{ 'opacity-100': hasNotes, 'opacity-40 grayscale': !hasNotes }"
             alt="Sticky Note" 
@@ -26,7 +26,7 @@
         <div class="flex flex-col max-h-[80vh]">
           <div class="p-4 border-b bg-muted/30 flex items-center justify-between">
             <div class="flex items-center gap-2">
-              <img src="/logo.svg" class="w-4 h-4" alt="Logo" />
+              <img :src="logoUrl" class="w-4 h-4" alt="Logo" />
               <h4 class="font-bold text-sm tracking-tight font-sans">Notes for @{{ username }}</h4>
             </div>
             <Badge variant="outline" class="text-[9px] px-1.5 py-0 uppercase tracking-widest">{{ notes.length }}</Badge>
@@ -110,6 +110,13 @@ const syncInterval = ref<any>(null)
 
 const editingNoteId = ref<string | null>(null)
 const editDraft = ref('')
+
+const logoUrl = computed(() => {
+  if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getURL) {
+    return chrome.runtime.getURL('logo.svg')
+  }
+  return '/logo.svg'
+})
 
 const hasNotes = computed(() => notes.value.length > 0)
 

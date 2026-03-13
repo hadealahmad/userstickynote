@@ -5,16 +5,18 @@ import StickyNoteWidget from './components/StickyNoteWidget.vue';
 console.log('Twitter Sticky Notes: Initialized');
 
 function injectWidgets() {
-  // Target actions menu on tweets (caret) and profiles (userActions)
-  const actionButtons = document.querySelectorAll('[data-testid="caret"], [data-testid="userActions"]');
+  // Target multiple possible anchor points for better coverage
+  const anchors = document.querySelectorAll('[data-testid="User-Name"], [data-testid="caret"], [data-testid="userActions"]');
 
-  actionButtons.forEach((btn) => {
-    if ((btn as any).__stickyNoteInjected) return;
+  anchors.forEach((anchor) => {
+    if ((anchor as any).__stickyNoteInjected) return;
+    
+    const tweet = anchor.closest('[data-testid="tweet"]');
+    const profileActions = anchor.closest('[data-testid="userActions"]');
     
     let username = '';
     let sourceUrl = window.location.href; 
 
-    const tweet = btn.closest('[data-testid="tweet"]');
     if (tweet) {
       // Find the username in the tweet
       const userNode = tweet.querySelector('[data-testid="User-Name"] a[href^="/"]');
@@ -23,42 +25,54 @@ function injectWidgets() {
         if (href) username = href.replace('/', '').split('/')[0] || '';
       }
       
-      // Attempt to find tweet specific url (often stored on the datestamp time element)
       const timeNode = tweet.querySelector('time');
       if (timeNode) {
         const linkNode = timeNode.closest('a');
-        if (linkNode && linkNode.href) {
-          sourceUrl = linkNode.href;
-        }
+        if (linkNode && linkNode.href) sourceUrl = linkNode.href;
       }
     } else {
-      // If we are on a profile page (no tweet wrapper), username is in the URL usually
       const pathParts = window.location.pathname.split('/').filter(Boolean);
       if (pathParts.length > 0) {
         username = pathParts[0] || '';
       }
     }
 
-    if (!username || ['home', 'explore', 'notifications', 'messages', 'i', 'compose'].includes(username.toLowerCase())) return;
+    if (!username || ['home', 'explore', 'notifications', 'messages', 'i', 'compose', 'search'].includes(username.toLowerCase())) return;
 
-    (btn as any).__stickyNoteInjected = true;
+    (anchor as any).__stickyNoteInjected = true;
 
     const container = document.createElement('div');
+    container.className = 'sticky-note-injection-point inline-flex items-center justify-center shrink-0';
 
     if (tweet) {
-       container.className = 'sticky-note-injection-point inline-flex items-center justify-center mr-1';
-       // On a tweet, the caret is usually grouped with Grok actions inside an r-1cmwbt1 container
-       // We inject as the first child of this container to appear next to Grok icon.
-       const actionsContainer = btn.closest('.r-1cmwbt1') || btn.parentNode;
-       if (actionsContainer && actionsContainer !== btn) {
-         actionsContainer.insertBefore(container, actionsContainer.firstChild);
+       // On a tweet, we prefer placing it in the top actions row (next to name or grok)
+       const grok = tweet.querySelector('[aria-label="Grok actions"]');
+       const caret = tweet.querySelector('[data-testid="caret"]');
+       
+       if (grok) {
+         // Place right before Grok
+         grok.parentNode?.insertBefore(container, grok);
+         container.classList.add('mr-1');
+       } else if (caret) {
+         // Place before the three-dots menu
+         caret.parentNode?.insertBefore(container, caret);
+         container.classList.add('mr-1');
        } else {
-         btn.parentNode?.insertBefore(container, btn);
+         // Fallback: append after the name section
+         const nameSection = anchor.closest('[data-testid="User-Name"]');
+         if (nameSection) {
+           nameSection.parentNode?.appendChild(container);
+           container.classList.add('ml-2');
+         }
        }
-    } else {
-       container.className = 'sticky-note-injection-point flex items-center justify-center h-full mr-2';
-       // Inside user actions (profile) wrapper directly
-       btn.parentNode?.insertBefore(container, btn);
+    } else if (profileActions) {
+       // Profile page actions list
+       anchor.parentNode?.insertBefore(container, anchor);
+       container.classList.add('mr-2', 'h-full');
+    } else if (anchor.getAttribute('data-testid') === 'User-Name') {
+       // Generic username appearance
+       anchor.appendChild(container);
+       container.classList.add('ml-2');
     }
 
     const isProfile = !tweet;

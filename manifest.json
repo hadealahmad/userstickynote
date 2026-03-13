@@ -31,5 +31,11 @@
   "background": {
     "service_worker": "src/background.ts",
     "type": "module"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["logo.svg", "icons/*.png"],
+      "matches": ["*://*.twitter.com/*", "*://*.x.com/*"]
+    }
+  ]
 }
