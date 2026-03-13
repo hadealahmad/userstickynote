@@ -3,7 +3,7 @@ import { ref } from 'vue';
 import { useForm, usePage, Head, Link } from '@inertiajs/vue3';
 import DashboardLayout from '../Layouts/DashboardLayout.vue';
 import { 
-  Key, Plus, Trash2, CheckCircle, Copy, Search, Edit3, Trash, 
+  Key, Plus, CheckCircle, Search, Edit3, Trash, 
   ShieldAlert, BadgeDollarSign, CreditCard, ExternalLink, 
   Clock, User, MoreVertical, AlertTriangle
 } from 'lucide-vue-next';
@@ -28,37 +28,21 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 const props = defineProps({
-  tokens: Array,
   noteCount: Number,
   notes: Array,
 });
 
 const page = usePage();
-const showTokenDialog = ref(false);
-const showSuccessDialog = ref(false);
 const showDeleteAccountDialog = ref(false);
 const showNoteDialog = ref(false);
 const editingNote = ref(null);
-const generatedToken = ref(null);
 
 // Forms
-const tokenForm = useForm({ name: '' });
 const noteForm = useForm({
   id: null,
   twitter_user_id: '',
   content: '',
 });
-
-const createToken = () => {
-  tokenForm.post('/tokens', {
-    onSuccess: (p) => {
-      generatedToken.value = p.props.flash.newToken;
-      showTokenDialog.value = false;
-      showSuccessDialog.value = true;
-      tokenForm.reset();
-    },
-  });
-};
 
 const openNoteDialog = (note = null) => {
   editingNote.value = note;
@@ -94,10 +78,6 @@ const deleteAccount = () => {
     useForm({}).delete('/account');
 };
 
-const copyToken = () => {
-  navigator.clipboard.writeText(generatedToken.value.plain);
-  // We could use a toast here if we had one
-};
 
 const formatDate = (date) => {
   if (!date) return 'Never';
@@ -234,59 +214,6 @@ const formatDate = (date) => {
       </div>
     </div>
 
-    <!-- Tokens Section -->
-    <Card class="mb-20 overflow-hidden shadow-sm">
-      <CardHeader class="flex flex-row items-center justify-between border-b bg-accent/20 py-6">
-        <div class="flex items-center gap-4">
-          <div class="w-10 h-10 rounded-xl bg-card border flex items-center justify-center">
-              <Key class="w-5 h-5 text-muted-foreground" />
-          </div>
-          <div>
-            <CardTitle class="text-xl font-outfit">Sync Tokens</CardTitle>
-            <CardDescription>Use these tokens to connect your browser extension.</CardDescription>
-          </div>
-        </div>
-        <Button variant="outline" @click="showTokenDialog = true" class="rounded-xl gap-2 font-bold shadow-sm">
-          <Plus class="w-4 h-4" /> Generate Token
-        </Button>
-      </CardHeader>
-
-      <CardContent class="p-0">
-        <div class="overflow-x-auto">
-            <table class="w-full text-left">
-              <thead class="bg-accent/10">
-                <tr class="text-xs uppercase font-bold text-muted-foreground border-b">
-                    <th class="px-8 py-4">Device Name</th>
-                    <th class="px-8 py-4">Last Activity</th>
-                    <th class="px-8 py-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y text-sm">
-                <tr v-if="tokens.length === 0">
-                    <td colspan="3" class="px-8 py-10 text-center text-muted-foreground italic">No active tokens. Generate one to start syncing.</td>
-                </tr>
-                <tr v-for="token in tokens" :key="token.id" class="hover:bg-accent/10 transition-colors">
-                  <td class="px-8 py-5">
-                      <div class="flex items-center gap-3">
-                          <div class="w-2 h-2 rounded-full bg-primary" v-if="token.last_used_at"></div>
-                          <div class="w-2 h-2 rounded-full bg-muted" v-else></div>
-                          <span class="font-bold">{{ token.name }}</span>
-                      </div>
-                  </td>
-                  <td class="px-8 py-5 text-muted-foreground">
-                      {{ token.last_used_at ? formatDate(token.last_used_at) : 'Not used yet' }}
-                  </td>
-                  <td class="px-8 py-5 text-right">
-                    <Button variant="ghost" size="icon" class="text-muted-foreground hover:text-destructive hover:bg-destructive/10" @click="useForm({}).delete(`/tokens/${token.id}`)">
-                        <Trash2 class="w-4 h-4" />
-                    </Button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-        </div>
-      </CardContent>
-    </Card>
 
     <!-- Danger Zone -->
     <Separator class="mb-12" />
@@ -309,52 +236,6 @@ const formatDate = (date) => {
 
     <!-- Modals (Token, Success, Error, Note, Delete) -->
     
-    <!-- Token Create Dialog -->
-    <Dialog v-model:open="showTokenDialog">
-        <DialogContent class="sm:max-w-md">
-            <DialogHeader>
-                <DialogTitle>New Sync Token</DialogTitle>
-                <DialogDescription>Give your token a name to identify which device is using it.</DialogDescription>
-            </DialogHeader>
-            <form @submit.prevent="createToken">
-                <div class="space-y-4 py-4">
-                    <div class="space-y-2">
-                        <Label for="token-name">Device Name</Label>
-                        <Input id="token-name" v-model="tokenForm.name" required placeholder="e.g. My Laptop, Chrome at Work" />
-                    </div>
-                </div>
-                <DialogFooter>
-                    <Button variant="ghost" type="button" @click="showTokenDialog = false">Cancel</Button>
-                    <Button type="submit" :disabled="tokenForm.processing">Create Token</Button>
-                </DialogFooter>
-            </form>
-        </DialogContent>
-    </Dialog>
-
-    <!-- Success Token Dialog -->
-    <Dialog v-model:open="showSuccessDialog">
-        <DialogContent class="sm:max-w-md border-primary/50">
-            <DialogHeader>
-                <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                    <CheckCircle class="w-6 h-6 text-primary" />
-                </div>
-                <DialogTitle>Token Generated Successfully</DialogTitle>
-                <DialogDescription>
-                    Copy this token and paste it into your browser extension settings. 
-                    <span class="text-destructive font-bold underline italic">This is the only time you will see this token.</span>
-                </DialogDescription>
-            </DialogHeader>
-            <div class="bg-accent/50 p-4 rounded-xl border border-dashed flex justify-between items-center my-4 group">
-                 <code class="text-primary font-mono text-xs truncate mr-4">{{ generatedToken?.plain }}</code>
-                 <Button variant="ghost" size="icon" @click="copyToken()" class="shrink-0 hover:bg-primary hover:text-white transition-colors">
-                     <Copy class="w-4 h-4" />
-                 </Button>
-            </div>
-            <DialogFooter>
-                <Button variant="secondary" class="w-full" @click="showSuccessDialog = false">Finished</Button>
-            </DialogFooter>
-        </DialogContent>
-    </Dialog>
 
     <!-- Account Delete Dialog -->
     <Dialog v-model:open="showDeleteAccountDialog">

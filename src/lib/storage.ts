@@ -20,7 +20,7 @@ export interface Settings {
 }
 
 export class StorageService {
-  private static DEFAULT_API_URL = 'https://twitter-sticky-notes.cranl.app'; // Placeholder
+  private static DEFAULT_API_URL = 'https://notes.hadealahmad.com';
 
   static async getSettings(): Promise<Settings> {
     return new Promise((resolve) => {
@@ -215,8 +215,35 @@ export class StorageService {
     return settings.isSubscribed;
   }
 
+  static async connectWithDashboard(): Promise<boolean> {
+    const settings = await this.getSettings();
+    try {
+      const response = await fetch(`${settings.apiUrl}/api/connect`, {
+        // This is important: it tells fetch to include cookies for the target domain
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.token) {
+          settings.apiToken = data.token;
+          settings.isSubscribed = data.user.is_subscribed;
+          settings.syncMode = 'cloud';
+          await this.saveSettings(settings);
+          return true;
+        }
+      }
+    } catch (err) {
+      console.error('Failed to connect with dashboard:', err);
+    }
+    return false;
+  }
+
   static loginWithGoogle(): void {
-    const apiUrl = 'https://twitter-sticky-notes.cranl.app'; 
+    const apiUrl = 'https://notes.hadealahmad.com'; 
     window.open(`${apiUrl}/dashboard`, '_blank');
   }
 }

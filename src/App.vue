@@ -81,25 +81,17 @@
             </select>
           </div>
           
-          <div class="space-y-2">
-            <label class="text-[10px] font-bold text-zinc-500 uppercase tracking-tighter">API Sync Token</label>
-            <div class="relative">
-              <input 
-                v-model="settings.apiToken" 
-                type="password" 
-                placeholder="Paste token from dashboard..." 
-                class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-blue-500/50"
-              />
-              <KeyIcon class="absolute right-3 top-2.5 w-4 h-4 text-zinc-600" />
-            </div>
-            <p class="text-[10px] text-zinc-500">Manage tokens on the <a @click="StorageService.loginWithGoogle()" class="text-blue-500 hover:underline cursor-pointer">web dashboard</a>.</p>
+          <div v-if="!settings.apiToken" class="p-4 bg-blue-600/5 border border-dashed border-blue-500/30 rounded-2xl space-y-3">
+            <p class="text-[11px] text-zinc-400">Your account is ready. Click below to link this device.</p>
+            <Button @click="handleAutoConnect" :disabled="isConnecting" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl">
+              <LinkIcon v-if="!isConnecting" class="w-4 h-4 mr-2" />
+              <RefreshCwIcon v-else class="w-4 h-4 mr-2 animate-spin" />
+              Connect Device
+            </Button>
           </div>
 
-          <div class="flex gap-2">
-            <Button @click="saveSettings" size="sm" class="flex-1 bg-zinc-100 text-black hover:bg-white font-bold rounded-2xl">
-              Update
-            </Button>
-            <Button @click="triggerSync" :disabled="isSyncing || !settings.apiToken" size="sm" variant="outline" class="flex-1 font-bold rounded-2xl border-zinc-800">
+          <div v-else class="flex gap-2">
+            <Button @click="triggerSync" :disabled="isSyncing" size="sm" class="flex-1 bg-zinc-100 text-black hover:bg-white font-bold rounded-2xl">
               <RefreshCwIcon class="w-3 h-3 mr-2" :class="{ 'animate-spin': isSyncing }" />
               Sync Now
             </Button>
@@ -122,7 +114,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, reactive } from 'vue'
-import { StickyNote as StickyNoteIcon, Trash as TrashIcon, Settings as SettingsIcon, Key as KeyIcon, RefreshCw as RefreshCwIcon, Cloud as CloudIcon, CheckCircle, CreditCard, ArrowUpRight } from 'lucide-vue-next'
+import { StickyNote as StickyNoteIcon, Trash as TrashIcon, Settings as SettingsIcon, Key as KeyIcon, RefreshCw as RefreshCwIcon, Cloud as CloudIcon, CheckCircle, CreditCard, ArrowUpRight, Link as LinkIcon } from 'lucide-vue-next'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from './components/ui/card/index'
 import { Button } from './components/ui/button/index'
 import { StorageService, type StickyNote, type Settings } from './lib/storage'
@@ -130,11 +122,12 @@ import { StorageService, type StickyNote, type Settings } from './lib/storage'
 const view = ref<'notes' | 'settings'>('notes')
 const notes = ref<StickyNote[]>([])
 const isSyncing = ref(false)
+const isConnecting = ref(false)
 
 const settings = reactive<Settings>({
   apiToken: '',
   syncMode: 'local',
-  apiUrl: 'https://twitter-sticky-notes.cranl.app',
+  apiUrl: 'https://notes.hadealahmad.com',
   isSubscribed: false
 })
 
@@ -145,11 +138,14 @@ async function loadData() {
   const savedSettings = await StorageService.getSettings()
   Object.assign(settings, savedSettings)
 
-  // Auto check subscription if token exists
+  // Auto check subscription or try to auto-connect if no token
   if (settings.apiToken) {
     await StorageService.checkSubscription()
     const updatedSettings = await StorageService.getSettings()
     settings.isSubscribed = updatedSettings.isSubscribed
+  } else {
+    // Try to auto-connect silently on load
+    handleAutoConnect(true)
   }
 }
 
@@ -159,8 +155,21 @@ onMounted(() => {
 
 async function saveSettings() {
   await StorageService.saveSettings({ ...settings })
-  if (settings.apiToken) {
-     await StorageService.checkSubscription()
+}
+
+async function handleAutoConnect(silent = false) {
+  isConnecting.value = true
+  try {
+    const success = await StorageService.connectWithDashboard()
+    if (success) {
+      const updated = await StorageService.getSettings()
+      Object.assign(settings, updated)
+    } else if (!silent) {
+      // If failed and button was clicked manually, open the dashboard
+      StorageService.loginWithGoogle()
+    }
+  } finally {
+    isConnecting.value = false
   }
 }
 

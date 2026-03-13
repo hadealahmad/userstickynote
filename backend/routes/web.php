@@ -24,6 +24,7 @@ Route::post('/auth/logout', [AuthController::class, 'logout'])->name('auth.logou
 // Web Dashboard (auth required)
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/api/connect', [DashboardController::class, 'connect'])->name('api.connect');
     Route::post('/tokens', [DashboardController::class, 'createToken'])->name('tokens.create');
     Route::delete('/tokens/{id}', [DashboardController::class, 'deleteToken'])->name('tokens.delete');
     Route::delete('/account', [DashboardController::class, 'deleteAccount'])->name('account.delete');

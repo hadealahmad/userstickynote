@@ -14,11 +14,9 @@ class DashboardController extends Controller
     public function index(): Response
     {
         $user = auth()->user();
-        $tokens = $user->apiTokens()->latest()->get(['id', 'name', 'last_used_at', 'created_at']);
         $noteCount = $user->notes()->count();
 
         return Inertia::render('Dashboard', [
-            'tokens' => $tokens,
             'notes' => $user->notes()->latest()->get(),
             'noteCount' => $noteCount,
         ]);
@@ -63,5 +61,25 @@ class DashboardController extends Controller
         auth()->logout();
 
         return redirect()->route('home')->with('message', 'Account deleted successfully. No refunds were issued as per policy.');
+    }
+
+    public function connect(): \Illuminate\Http\JsonResponse
+    {
+        $user = auth()->user();
+        
+        $plainToken = Str::random(40);
+        $user->apiTokens()->updateOrCreate(
+            ['name' => 'Browser Extension'],
+            ['token' => hash('sha256', $plainToken)]
+        );
+
+        return response()->json([
+            'token' => $plainToken,
+            'user' => [
+                'name' => $user->name,
+                'email' => $user->email,
+                'is_subscribed' => (bool)$user->is_subscribed,
+            ]
+        ]);
     }
 }
