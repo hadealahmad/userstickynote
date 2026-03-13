@@ -3,7 +3,7 @@
   "name": "Twitter Sticky Notes",
   "version": "1.0.0",
   "description": "Attach sticky notes to Twitter user profiles and timelines.",
-  "permissions": ["storage"],
+  "permissions": ["storage", "cookies"],
   "host_permissions": ["*://*.twitter.com/*", "*://*.x.com/*", "https://notes.hadealahmad.com/*"],
   "icons": {
     "16": "icons/icon16.png",
@@ -24,5 +24,12 @@
       "matches": ["*://*.twitter.com/*", "*://*.x.com/*"],
       "js": ["src/content.ts"]
     }
-  ]
+  ],
+  "externally_connectable": {
+    "matches": ["https://notes.hadealahmad.com/*"]
+  },
+  "background": {
+    "service_worker": "src/background.ts",
+    "type": "module"
+  }
 }

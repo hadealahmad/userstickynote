@@ -219,10 +219,10 @@ export class StorageService {
     const settings = await this.getSettings();
     try {
       const response = await fetch(`${settings.apiUrl}/api/connect`, {
-        // This is important: it tells fetch to include cookies for the target domain
         credentials: 'include',
         headers: {
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
         }
       });
 
@@ -230,14 +230,17 @@ export class StorageService {
         const data = await response.json();
         if (data.token) {
           settings.apiToken = data.token;
-          settings.isSubscribed = data.user.is_subscribed;
+          settings.isSubscribed = !!data.user.is_subscribed;
           settings.syncMode = 'cloud';
           await this.saveSettings(settings);
+          console.log('Successfully connected to cloud account:', data.user.email);
           return true;
         }
+      } else {
+        console.warn('Authentication with dashboard failed:', response.status, response.statusText);
       }
     } catch (err) {
-      console.error('Failed to connect with dashboard:', err);
+      console.error('Network error during auto-connect:', err);
     }
     return false;
   }

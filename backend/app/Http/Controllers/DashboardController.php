@@ -67,6 +67,10 @@ class DashboardController extends Controller
     {
         $user = auth()->user();
         
+        if (!$user) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
         $plainToken = Str::random(40);
         $user->apiTokens()->updateOrCreate(
             ['name' => 'Browser Extension'],

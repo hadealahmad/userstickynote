@@ -82,12 +82,13 @@
           </div>
           
           <div v-if="!settings.apiToken" class="p-4 bg-blue-600/5 border border-dashed border-blue-500/30 rounded-2xl space-y-3">
-            <p class="text-[11px] text-zinc-400">Your account is ready. Click below to link this device.</p>
-            <Button @click="handleAutoConnect" :disabled="isConnecting" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl">
+            <p class="text-[11px] text-zinc-400 text-center">Your account is ready. Click below to link this device.</p>
+            <Button @click="handleAutoConnect()" :disabled="isConnecting" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl">
               <LinkIcon v-if="!isConnecting" class="w-4 h-4 mr-2" />
               <RefreshCwIcon v-else class="w-4 h-4 mr-2 animate-spin" />
               Connect Device
             </Button>
+            <p v-if="connectionError" class="text-[10px] text-red-500 text-center font-bold">{{ connectionError }}</p>
           </div>
 
           <div v-else class="flex gap-2">
@@ -99,13 +100,22 @@
         </div>
       </div>
 
-      <div class="mt-auto p-4 bg-zinc-900/50 border border-white/5 rounded-3xl flex justify-between items-center">
-         <div class="flex items-center gap-2">
-            <div class="w-2 h-2 rounded-full" :class="settings.apiToken ? 'bg-green-500' : 'bg-zinc-600'"></div>
-            <span class="text-[10px] text-zinc-500 uppercase font-bold">{{ settings.apiToken ? 'Connected' : 'Offline' }}</span>
+      <div class="mt-auto p-4 bg-zinc-900/50 border border-white/5 rounded-3xl space-y-2">
+         <div class="flex justify-between items-center">
+            <div class="flex items-center gap-2">
+               <div class="w-2 h-2 rounded-full" :class="settings.apiToken ? 'bg-green-500' : 'bg-zinc-600'"></div>
+               <span class="text-[10px] text-zinc-500 uppercase font-bold">{{ settings.apiToken ? 'Connected' : 'Offline' }}</span>
+            </div>
+            <button @click="StorageService.loginWithGoogle()" class="text-[10px] text-zinc-400 hover:text-white flex items-center gap-1 font-bold">
+               Manage Account <ArrowUpRight class="w-3 h-3" />
+            </button>
          </div>
-         <button @click="StorageService.loginWithGoogle()" class="text-[10px] text-zinc-400 hover:text-white flex items-center gap-1 font-bold">
-            Manage Account <ArrowUpRight class="w-3 h-3" />
+         <div v-if="showDevSettings" class="pt-2 border-t border-white/5">
+            <label class="text-[9px] text-zinc-600 uppercase font-bold block mb-1">Backend URL</label>
+            <input v-model="settings.apiUrl" @change="saveSettings" placeholder="https://..." class="w-full bg-black border border-zinc-800 rounded px-2 py-1 text-[10px] focus:outline-none focus:border-blue-500" />
+         </div>
+         <button @click="showDevSettings = !showDevSettings" class="w-full text-[8px] text-zinc-700 hover:text-zinc-500 uppercase tracking-widest pt-1">
+             {{ showDevSettings ? 'Hide' : 'Show' }} Dev Settings
          </button>
       </div>
     </div>
@@ -114,7 +124,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, reactive } from 'vue'
-import { StickyNote as StickyNoteIcon, Trash as TrashIcon, Settings as SettingsIcon, Key as KeyIcon, RefreshCw as RefreshCwIcon, Cloud as CloudIcon, CheckCircle, CreditCard, ArrowUpRight, Link as LinkIcon } from 'lucide-vue-next'
+import { StickyNote as StickyNoteIcon, Trash as TrashIcon, Settings as SettingsIcon, RefreshCw as RefreshCwIcon, Cloud as CloudIcon, CheckCircle, CreditCard, ArrowUpRight, Link as LinkIcon } from 'lucide-vue-next'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from './components/ui/card/index'
 import { Button } from './components/ui/button/index'
 import { StorageService, type StickyNote, type Settings } from './lib/storage'
@@ -123,6 +133,8 @@ const view = ref<'notes' | 'settings'>('notes')
 const notes = ref<StickyNote[]>([])
 const isSyncing = ref(false)
 const isConnecting = ref(false)
+const connectionError = ref('')
+const showDevSettings = ref(false)
 
 const settings = reactive<Settings>({
   apiToken: '',
@@ -159,15 +171,19 @@ async function saveSettings() {
 
 async function handleAutoConnect(silent = false) {
   isConnecting.value = true
+  connectionError.value = ''
   try {
     const success = await StorageService.connectWithDashboard()
     if (success) {
       const updated = await StorageService.getSettings()
       Object.assign(settings, updated)
     } else if (!silent) {
+      connectionError.value = 'Make sure you are logged in to the dashboard.'
       // If failed and button was clicked manually, open the dashboard
       StorageService.loginWithGoogle()
     }
+  } catch (err) {
+    if (!silent) connectionError.value = 'Network error. Check your connection.'
   } finally {
     isConnecting.value = false
   }
