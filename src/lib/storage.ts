@@ -17,6 +17,7 @@ export interface Settings {
   syncMode: SyncMode;
   apiUrl: string;
   isSubscribed: boolean;
+  isAdmin: boolean;
 }
 
 export class StorageService {
@@ -28,7 +29,8 @@ export class StorageService {
         apiToken: '',
         syncMode: 'local',
         apiUrl: this.DEFAULT_API_URL,
-        isSubscribed: false
+        isSubscribed: false,
+        isAdmin: false
       };
 
       if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
@@ -99,7 +101,7 @@ export class StorageService {
     const settings = await this.getSettings();
     if (settings.syncMode === 'cloud' && settings.apiToken) {
       try {
-        await fetch(`${settings.apiUrl}/api/notes`, {
+        const response = await fetch(`${settings.apiUrl}/api/notes`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${settings.apiToken}`,
@@ -107,16 +109,25 @@ export class StorageService {
             'Accept': 'application/json'
           },
           body: JSON.stringify({
-            twitter_user_id: note.username, // Using username as ID for Twitter in this extension
+            twitter_user_id: note.username,
             twitter_username: note.username,
             content: note.text,
             source_url: note.sourceUrl,
             client_id: note.id
           })
         });
+        if (!response.ok) {
+           const errorData = await response.json();
+           console.error('Cloud Sync Failed:', response.status, errorData);
+        } else {
+           console.log('Note synced to cloud successfully');
+        }
       } catch (err) {
-        console.error('Cloud Sync Failed:', err);
+        console.error('Cloud Sync Network Error:', err);
       }
+      
+      // Also trigger a full background sync to ensure everything is perfectly aligned
+      await this.syncWithCloud();
     }
   }
 
@@ -128,8 +139,28 @@ export class StorageService {
 
     const settings = await this.getSettings();
     if (settings.syncMode === 'cloud' && settings.apiToken) {
-       // In a full sync system, we'd handle soft deletes or specific delete endpoints
-       // For now, we'll rely on the full sync trigger or specific delete if needed
+       try {
+         // Assuming the server uses the client_id (which is our local id) for deletion 
+         // or we search for the note with that client_id
+         const response = await fetch(`${settings.apiUrl}/api/notes/0?client_id=${id}`, {
+           method: 'DELETE',
+           headers: {
+             'Authorization': `Bearer ${settings.apiToken}`,
+             'Accept': 'application/json'
+           }
+         });
+         
+         if (!response.ok) {
+           console.warn('Cloud Delete failed, will retry during full sync', response.status);
+         } else {
+           console.log('Note deleted from cloud');
+         }
+       } catch (err) {
+         console.error('Cloud Delete Network Error:', err);
+       }
+       
+       // Trigger full sync to be sure
+       await this.syncWithCloud();
     }
   }
 
@@ -175,20 +206,24 @@ export class StorageService {
       if (response.ok) {
         const data = await response.json();
         const serverNotes: StickyNote[] = data.notes.map((n: any) => ({
-          id: n.client_id,
-          username: n.twitter_username,
-          platform: 'twitter',
+          id: n.client_id || `remote-${n.id}`,
+          username: n.twitter_username || n.twitter_user_id,
+          platform: 'twitter' as const,
           text: n.content,
           sourceUrl: n.source_url,
           createdAt: new Date(n.created_at).getTime(),
           updatedAt: new Date(n.updated_at).getTime()
         }));
 
+        console.log(`Synced ${serverNotes.length} notes from cloud`);
         // Replace local with merged cloud server state
         await this.saveLocally(serverNotes);
+      } else {
+        const errorData = await response.json();
+        console.error('Cloud Sync Sync failed:', response.status, errorData);
       }
     } catch (err) {
-      console.error('Cloud Sync Background Failed:', err);
+      console.error('Cloud Sync Background Network Error:', err);
     }
   }
 
@@ -205,9 +240,10 @@ export class StorageService {
       });
       if (response.ok) {
         const user = await response.json();
-        settings.isSubscribed = user.is_subscribed;
+        settings.isSubscribed = !!user.is_subscribed;
+        settings.isAdmin = !!user.is_admin;
         await this.saveSettings(settings);
-        return settings.isSubscribed;
+        return settings.isSubscribed || settings.isAdmin;
       }
     } catch (err) {
       console.error('Subscription Check Failed:', err);
@@ -231,6 +267,7 @@ export class StorageService {
         if (data.token) {
           settings.apiToken = data.token;
           settings.isSubscribed = !!data.user.is_subscribed;
+          settings.isAdmin = !!data.user.is_admin;
           settings.syncMode = 'cloud';
           await this.saveSettings(settings);
           console.log('Successfully connected to cloud account:', data.user.email);

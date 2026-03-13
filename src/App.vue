@@ -17,7 +17,7 @@
           :class="view === 'settings' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'"
         >
           <SettingsIcon class="w-4 h-4" />
-          {{ settings.isSubscribed ? 'Sync Settings' : 'Enable Sync' }}
+          {{ (settings.isSubscribed || settings.isAdmin) ? 'Sync Settings' : 'Enable Sync' }}
         </button>
       </div>
       <span class="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">{{ notes.length }} notes</span>
@@ -56,7 +56,7 @@
         <h3 class="text-sm font-bold font-outfit uppercase tracking-wider text-zinc-500">Cloud Configuration</h3>
         
         <!-- Non-Subscribed View -->
-        <div v-if="!settings.isSubscribed" class="p-6 bg-blue-600/10 rounded-3xl border border-blue-500/20 text-center space-y-4">
+        <div v-if="!settings.isSubscribed && !settings.isAdmin" class="p-6 bg-blue-600/10 rounded-3xl border border-blue-500/20 text-center space-y-4">
            <CloudIcon class="w-12 h-12 text-blue-500 mx-auto opacity-50" />
            <div class="space-y-1">
              <h4 class="font-bold">Sync across devices</h4>
@@ -140,7 +140,8 @@ const settings = reactive<Settings>({
   apiToken: '',
   syncMode: 'local',
   apiUrl: 'https://notes.hadealahmad.com',
-  isSubscribed: false
+  isSubscribed: false,
+  isAdmin: false
 })
 
 async function loadData() {

@@ -83,6 +83,7 @@ class DashboardController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'is_subscribed' => (bool)$user->is_subscribed,
+                'is_admin' => (bool)$user->is_admin,
             ]
         ]);
     }

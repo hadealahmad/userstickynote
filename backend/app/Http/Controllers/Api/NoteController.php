@@ -24,7 +24,7 @@ class NoteController extends Controller
         $user = $request->user();
 
         // Enforce subscription for cloud sync
-        if (!$user->is_subscribed) {
+        if (!$user->is_subscribed && !$user->is_admin) {
             return response()->json(['error' => 'Premium subscription required for cloud sync.'], 402);
         }
 
@@ -32,7 +32,7 @@ class NoteController extends Controller
             'twitter_user_id' => 'required|string',
             'twitter_username' => 'nullable|string',
             'content' => 'required|string|max:2000',
-            'source_url' => 'nullable|string|url',
+            'source_url' => 'nullable|string',
             'client_id' => 'nullable|string|max:100',
         ]);
 
@@ -50,7 +50,16 @@ class NoteController extends Controller
 
     public function destroy(Request $request, int $id): JsonResponse
     {
-        $note = $request->user()->notes()->findOrFail($id);
+        $clientId = $request->query('client_id');
+
+        $query = $request->user()->notes();
+
+        if ($clientId) {
+            $note = $query->where('client_id', $clientId)->firstOrFail();
+        } else {
+            $note = $query->findOrFail($id);
+        }
+
         $note->delete();
 
         return response()->json(['message' => 'Deleted']);
@@ -60,7 +69,7 @@ class NoteController extends Controller
     {
         $user = $request->user();
 
-        if (!$user->is_subscribed) {
+        if (!$user->is_subscribed && !$user->is_admin) {
             return response()->json(['error' => 'Premium subscription required for cloud sync.'], 402);
         }
 

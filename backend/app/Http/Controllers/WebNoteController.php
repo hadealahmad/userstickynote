@@ -11,7 +11,7 @@ class WebNoteController extends Controller
 {
     public function store(Request $request)
     {
-        if (!$request->user()->is_subscribed) {
+        if (!$request->user()->is_subscribed && !$request->user()->is_admin) {
             return Redirect::back()->with(
                 "error",
                 "Premium subscription required to create notes.",
@@ -42,7 +42,7 @@ class WebNoteController extends Controller
             abort(403);
         }
 
-        if (!$request->user()->is_subscribed) {
+        if (!$request->user()->is_subscribed && !$request->user()->is_admin) {
             return Redirect::back()->with(
                 "error",
                 "Premium subscription required to update notes.",
@@ -66,7 +66,7 @@ class WebNoteController extends Controller
             abort(403);
         }
 
-        if (!$request->user()->is_subscribed) {
+        if (!$request->user()->is_subscribed && !$request->user()->is_admin) {
             return Redirect::back()->with(
                 "error",
                 "Premium subscription required to delete notes.",
