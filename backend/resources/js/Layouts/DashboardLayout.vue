@@ -1,6 +1,6 @@
 <script setup>
 import { Link, usePage } from '@inertiajs/vue3';
-import { StickyNote, LogOut, LayoutDashboard, Database, User, Settings } from 'lucide-vue-next';
+import { StickyNote, LogOut, LayoutDashboard, Database, User, Settings, ShieldCheck } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -14,15 +14,29 @@ const page = usePage();
 
 <template>
   <div class="min-h-screen bg-background text-foreground font-sans">
+    <!-- Impersonation Banner -->
+    <div v-if="$page.props.auth.isImpersonating" class="bg-yellow-500 text-black py-2 px-6 flex justify-between items-center z-50 sticky top-0 font-bold text-sm">
+      <div class="flex items-center gap-2">
+        <ShieldCheck class="w-4 h-4" />
+        You are currently impersonating {{ $page.props.auth.user.name }}
+      </div>
+      <Link href="/admin/stop-impersonating" class="underline hover:no-underline flex items-center gap-1">
+        Stop Impersonating <LogOut class="w-4 h-4" />
+      </Link>
+    </div>
+
     <!-- Sidebar -->
-    <aside class="fixed left-0 top-0 h-full w-64 border-r bg-card z-40 hidden md:block">
+    <aside class="fixed left-0 top-0 h-full w-64 border-r bg-card z-40 hidden md:block" :class="{ 'mt-10': $page.props.auth.isImpersonating }">
       <div class="flex flex-col h-full">
         <div class="p-6">
-          <Link href="/" class="flex items-center gap-2 mb-10 group">
-            <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center transition-transform group-hover:rotate-6">
-              <StickyNote class="w-5 h-5 text-primary-foreground" />
+          <Link href="/" class="flex items-center gap-3 mb-10 group">
+            <div class="w-10 h-10 rounded-xl bg-yellow-500 flex items-center justify-center transition-transform group-hover:rotate-6 shadow-lg shadow-yellow-500/20">
+              <StickyNote class="w-6 h-6 text-black fill-black/20" />
             </div>
-            <span class="font-outfit font-bold text-xl tracking-tight">StickyNotes</span>
+            <div class="flex flex-col">
+              <span class="font-outfit font-bold text-lg leading-none tracking-tight">Username</span>
+              <span class="font-outfit text-xs text-muted-foreground font-medium uppercase tracking-widest">Sticky Notes</span>
+            </div>
           </Link>
 
           <nav class="space-y-1">
@@ -32,7 +46,17 @@ const page = usePage();
               :class="$page.url === '/dashboard' ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'text-muted-foreground hover:text-foreground hover:bg-accent'"
             >
               <LayoutDashboard class="w-5 h-5" />
-              Dashboard
+              My Notes
+            </Link>
+
+            <Link 
+              v-if="$page.props.auth.user.is_admin"
+              href="/admin" 
+              class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all font-medium"
+              :class="$page.url.startsWith('/admin') ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'text-muted-foreground hover:text-foreground hover:bg-accent'"
+            >
+              <ShieldCheck class="w-5 h-5" />
+              Admin Portal
             </Link>
           </nav>
         </div>

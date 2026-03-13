@@ -39,9 +39,17 @@ Route::middleware('auth')->group(function () {
 });
 
 // Admin Dashboard
-Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
-    Route::get('/', [AdminController::class, 'index'])->name('admin.dashboard');
+Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/', [AdminController::class, 'index'])->name('dashboard');
+    Route::post('/users', [AdminController::class, 'store'])->name('users.store');
+    Route::put('/users/{user}', [AdminController::class, 'update'])->name('users.update');
+    Route::delete('/users/{user}', [AdminController::class, 'destroy'])->name('users.destroy');
+    Route::post('/users/{user}/impersonate', [AdminController::class, 'impersonate'])->name('users.impersonate');
 });
+
+Route::get('/admin/stop-impersonating', [AdminController::class, 'stopImpersonating'])
+    ->middleware('auth')
+    ->name('admin.stop-impersonating');
 
 Route::prefix('api')->middleware(ApiTokenAuth::class)->group(function () {
     Route::get('/user', function (Request $request) {

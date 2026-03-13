@@ -80,28 +80,75 @@ class NoteController extends Controller
             'notes.*.content' => 'required|string|max:2000',
             'notes.*.source_url' => 'nullable|string',
             'notes.*.client_id' => 'required|string',
+            'notes.*.updated_at' => 'required|numeric',
+            'notes.*.deleted_at' => 'nullable|numeric',
         ]);
 
-        $user = $request->user();
-        $synced = [];
+        $syncedCount = 0;
 
         foreach ($request->notes as $noteData) {
-            $note = $user->notes()->updateOrCreate(
-                ['client_id' => $noteData['client_id']],
-                [
+            // Find existing note including deleted ones
+            $note = $user->notes()->withTrashed()->where('client_id', $noteData['client_id'])->first();
+            
+            $incomingUpdatedAt = date('Y-m-d H:i:s', $noteData['updated_at'] / 1000);
+            $incomingIsDeleted = !empty($noteData['deleted_at']);
+
+            if (!$note) {
+                // New note from client
+                $note = new Note([
+                    'user_id' => $user->id,
+                    'client_id' => $noteData['client_id'],
                     'twitter_user_id' => $noteData['twitter_user_id'],
                     'twitter_username' => $noteData['twitter_username'] ?? null,
                     'content' => strip_tags($noteData['content']),
                     'source_url' => $noteData['source_url'] ?? null,
-                ]
-            );
-            $synced[] = $note;
+                ]);
+                $note->created_at = $incomingUpdatedAt;
+                $note->updated_at = $incomingUpdatedAt;
+                
+                if ($incomingIsDeleted) {
+                    $note->deleted_at = date('Y-m-d H:i:s', $noteData['deleted_at'] / 1000);
+                }
+                
+                $note->save();
+                $syncedCount++;
+            } else {
+                // Resolve conflict using timestamps
+                $serverUpdatedAt = $note->updated_at->timestamp * 1000;
+                
+                // If client side is newer, update server
+                if ($noteData['updated_at'] > $serverUpdatedAt) {
+                    $note->fill([
+                        'twitter_user_id' => $noteData['twitter_user_id'],
+                        'twitter_username' => $noteData['twitter_username'] ?? null,
+                        'content' => strip_tags($noteData['content']),
+                        'source_url' => $noteData['source_url'] ?? null,
+                    ]);
+                    $note->updated_at = $incomingUpdatedAt;
+                    
+                    if ($incomingIsDeleted) {
+                        $note->deleted_at = date('Y-m-d H:i:s', $noteData['deleted_at'] / 1000);
+                    } else {
+                        $note->deleted_at = null; // Un-delete if client says it's alive and newer
+                    }
+                    
+                    $note->save();
+                    $syncedCount++;
+                }
+            }
         }
 
-        $allNotes = $user->notes()->latest()->get();
+        // Return all notes including recently deleted (e.g. within 30 days)
+        // This acts as a tombstone for the client to sync deletions
+        $allNotes = $user->notes()->withTrashed()
+            ->where(function($query) {
+                $query->whereNull('deleted_at')
+                      ->orWhere('deleted_at', '>', now()->subDays(30));
+            })
+            ->get();
 
         return response()->json([
-            'synced' => count($synced),
+            'synced' => $syncedCount,
             'notes' => $allNotes,
         ]);
     }

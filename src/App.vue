@@ -2,49 +2,72 @@
   <div class="w-[450px] h-[600px] bg-background text-foreground p-4 flex flex-col overflow-hidden font-sans border border-border">
     <!-- Navigation Tabs -->
     <div class="flex items-center justify-between mb-4 pb-2 border-b">
-      <div class="flex gap-4">
-        <button 
+      <div class="flex items-center gap-2">
+        <StickyNoteIcon class="w-5 h-5 text-yellow-500 fill-yellow-500/20" />
+        <h1 class="text-sm font-bold font-outfit tracking-tight">Username Sticky Notes</h1>
+      </div>
+      <div class="flex items-center gap-1">
+        <Button 
+          variant="ghost" 
+          size="icon"
           @click="view = 'notes'" 
-          class="text-sm font-bold flex items-center gap-2 transition-colors"
-          :class="view === 'notes' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'"
+          :class="view === 'notes' ? 'text-blue-500 bg-blue-500/10' : 'text-muted-foreground'"
+          title="My Notes"
         >
-          <StickyNoteIcon class="w-4 h-4 text-blue-500" />
-          My Notes
-        </button>
-        <button 
+          <StickyNoteIcon class="w-4 h-4" />
+        </Button>
+        <Button 
+          variant="ghost" 
+          size="icon"
           @click="view = 'settings'" 
-          class="text-sm font-bold flex items-center gap-2 transition-colors"
-          :class="view === 'settings' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'"
+          :class="view === 'settings' ? 'text-blue-500 bg-blue-500/10' : 'text-muted-foreground'"
+          title="Settings"
         >
           <SettingsIcon class="w-4 h-4" />
-          {{ (settings.isSubscribed || settings.isAdmin) ? 'Sync Settings' : 'Enable Sync' }}
-        </button>
+        </Button>
       </div>
-      <span class="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">{{ notes.length }} notes</span>
+    </div>
+
+    <!-- Search Bar (only in notes view) -->
+    <div v-if="view === 'notes'" class="mb-4 relative">
+      <Search class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+      <Input 
+        v-model="searchQuery" 
+        placeholder="Search notes..." 
+        class="h-9 pl-9 pr-3 text-xs bg-zinc-900 border-zinc-800 rounded-xl"
+      />
     </div>
 
     <!-- Notes View -->
-    <div v-if="view === 'notes'" class="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
-      <div v-if="notes.length === 0" class="text-center text-muted-foreground mt-10 p-10 border border-dashed rounded-xl">
-        <StickyNoteIcon class="w-10 h-10 mx-auto mb-4 opacity-20" />
-        No sticky notes yet. <br/> Go to Twitter and attach a note!
+    <div v-if="view === 'notes'" class="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+      <div v-if="filteredNotes.length === 0" class="text-center text-muted-foreground mt-10 p-10 border border-dashed rounded-xl">
+        <div v-if="searchQuery" class="space-y-2">
+            <Search class="w-10 h-10 mx-auto opacity-10" />
+            <p>No matches for "{{ searchQuery }}"</p>
+        </div>
+        <div v-else class="space-y-2">
+            <StickyNoteIcon class="w-10 h-10 mx-auto opacity-10" />
+            <p>No sticky notes found.<br/>Go to Twitter and attach a note!</p>
+        </div>
       </div>
       
-      <Card v-for="note in notes" :key="note.id" class="relative group shadow-sm bg-zinc-900 border-zinc-800 rounded-3xl overflow-hidden">
-        <CardHeader class="p-4 pb-1 flex flex-row items-center justify-between space-y-0">
-          <CardTitle class="text-sm font-bold flex items-center gap-1">
-            <span class="text-blue-400">@{{ note.username }}</span>
-          </CardTitle>
-          <button @click="deleteNote(note.id)" class="text-muted-foreground hover:text-red-500 transition-colors">
-            <TrashIcon class="w-4 h-4" />
-          </button>
-        </CardHeader>
-        <CardContent class="p-4 pt-1">
-          <p class="text-sm whitespace-pre-wrap text-zinc-100" style="word-break: break-word;">{{ note.text }}</p>
+      <Card v-for="note in filteredNotes" :key="note.id" class="relative group shadow-sm bg-zinc-900/50 border-zinc-800/50 rounded-2xl overflow-hidden hover:border-zinc-700 transition-all duration-200">
+        <CardContent class="p-3 pb-2">
+          <div class="flex justify-between items-start gap-2 mb-1">
+            <Badge variant="secondary" class="bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 text-[9px] px-1.5 py-0 border-none rounded-md">
+              @{{ note.username }}
+            </Badge>
+            <button @click="deleteNote(note.id)" class="text-muted-foreground hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100">
+              <TrashIcon class="w-3.5 h-3.5" />
+            </button>
+          </div>
+          <p class="text-xs leading-relaxed text-zinc-200 whitespace-pre-wrap" style="word-break: break-word;">{{ note.text }}</p>
         </CardContent>
-        <CardFooter class="p-4 pt-0 flex items-center justify-between text-[10px] text-zinc-500 mt-2">
-           <a v-if="note.sourceUrl" :href="note.sourceUrl" target="_blank" class="text-blue-400 hover:text-blue-300 hover:underline max-w-[60%] line-clamp-1" title="Go to Source">Source Link</a>
-           <span v-else>Manual entry</span>
+        <CardFooter class="px-3 py-2 pt-0 flex items-center justify-between text-[9px] text-zinc-500 bg-zinc-950/20">
+           <a v-if="note.sourceUrl" :href="note.sourceUrl" target="_blank" class="text-blue-500/70 hover:text-blue-400 flex items-center gap-1 transition-colors" title="Go to Source">
+             <LinkIcon class="w-2.5 h-2.5" /> Source
+           </a>
+           <span v-else>Manual</span>
            <span>{{ new Date(note.updatedAt).toLocaleDateString() }}</span>
         </CardFooter>
       </Card>
@@ -123,18 +146,30 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, reactive } from 'vue'
-import { StickyNote as StickyNoteIcon, Trash as TrashIcon, Settings as SettingsIcon, RefreshCw as RefreshCwIcon, Cloud as CloudIcon, CheckCircle, CreditCard, ArrowUpRight, Link as LinkIcon } from 'lucide-vue-next'
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from './components/ui/card/index'
+import { ref, onMounted, reactive, computed } from 'vue'
+import { StickyNote as StickyNoteIcon, Trash as TrashIcon, Settings as SettingsIcon, RefreshCw as RefreshCwIcon, Cloud as CloudIcon, CheckCircle, CreditCard, ArrowUpRight, Link as LinkIcon, Search } from 'lucide-vue-next'
+import { Card, CardContent, CardFooter } from './components/ui/card/index'
 import { Button } from './components/ui/button/index'
+import { Input } from './components/ui/input/index'
+import { Badge } from './components/ui/badge/index'
 import { StorageService, type StickyNote, type Settings } from './lib/storage'
 
 const view = ref<'notes' | 'settings'>('notes')
 const notes = ref<StickyNote[]>([])
+const searchQuery = ref('')
 const isSyncing = ref(false)
 const isConnecting = ref(false)
 const connectionError = ref('')
 const showDevSettings = ref(false)
+
+const filteredNotes = computed(() => {
+  if (!searchQuery.value) return notes.value
+  const query = searchQuery.value.toLowerCase()
+  return notes.value.filter(n => 
+    n.text.toLowerCase().includes(query) || 
+    n.username.toLowerCase().includes(query)
+  )
+})
 
 const settings = reactive<Settings>({
   apiToken: '',
@@ -145,8 +180,10 @@ const settings = reactive<Settings>({
 })
 
 async function loadData() {
-  notes.value = await StorageService.getAllNotes()
-  notes.value.sort((a, b) => b.updatedAt - a.updatedAt)
+  const allNotes = await StorageService.getAllNotes()
+  notes.value = allNotes
+    .filter(n => !n.deletedAt)
+    .sort((a, b) => b.updatedAt - a.updatedAt)
   
   const savedSettings = await StorageService.getSettings()
   Object.assign(settings, savedSettings)
@@ -159,6 +196,11 @@ async function loadData() {
   } else {
     // Try to auto-connect silently on load
     handleAutoConnect(true)
+  }
+
+  // Trigger cloud sync whenever popup is opened
+  if (settings.syncMode === 'cloud' && settings.apiToken) {
+    triggerSync()
   }
 }
 

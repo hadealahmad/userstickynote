@@ -8,6 +8,7 @@ export interface StickyNote {
   sourceUrl?: string;
   createdAt: number;
   updatedAt: number;
+  deletedAt?: number;
 }
 
 export type SyncMode = 'local' | 'cloud'
@@ -59,7 +60,11 @@ export class StorageService {
 
   static async getNotes(username: string, platform: SocialPlatform): Promise<StickyNote[]> {
     const allNotes = await this.getAllNotes();
-    return allNotes.filter(n => n.username.toLowerCase() === username.toLowerCase() && n.platform === platform);
+    return allNotes.filter(n => 
+      !n.deletedAt && 
+      n.username.toLowerCase() === username.toLowerCase() && 
+      n.platform === platform
+    );
   }
 
   static async getAllNotes(): Promise<StickyNote[]> {
@@ -87,6 +92,7 @@ export class StorageService {
     
     if (existingIndex >= 0) {
       note.updatedAt = Date.now();
+      note.deletedAt = undefined; // Un-delete if re-saved
       allNotes[existingIndex] = note;
     } else {
       note.createdAt = Date.now();
@@ -100,68 +106,101 @@ export class StorageService {
     // Sync to cloud if enabled
     const settings = await this.getSettings();
     if (settings.syncMode === 'cloud' && settings.apiToken) {
-      try {
-        const response = await fetch(`${settings.apiUrl}/api/notes`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${settings.apiToken}`,
-            'X-Api-Token': settings.apiToken,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify({
-            twitter_user_id: note.username,
-            twitter_username: note.username,
-            content: note.text,
-            source_url: note.sourceUrl,
-            client_id: note.id
-          })
-        });
-        if (!response.ok) {
-           const errorData = await response.json();
-           console.error('Cloud Sync Failed:', response.status, errorData);
-        } else {
-           console.log('Note synced to cloud successfully');
-        }
-      } catch (err) {
-        console.error('Cloud Sync Network Error:', err);
-      }
+      // If we are in a popup/content script, send to background.
+      // If we are in background, don't send to background.
+      const isBackground = typeof window === 'undefined';
       
-      // Also trigger a full background sync to ensure everything is perfectly aligned
-      await this.syncWithCloud();
+      if (!isBackground && typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+        chrome.runtime.sendMessage({ type: 'SAVE_NOTE_REMOTE', note });
+      } else {
+        await this.syncNoteRemote(note);
+      }
+    }
+  }
+
+  static async syncNoteRemote(note: StickyNote): Promise<void> {
+    const settings = await this.getSettings();
+    try {
+      const response = await fetch(`${settings.apiUrl}/api/notes`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${settings.apiToken}`,
+          'X-Api-Token': settings.apiToken,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          twitter_user_id: note.username,
+          twitter_username: note.username,
+          content: note.text,
+          source_url: note.sourceUrl,
+          client_id: note.id,
+          updated_at: note.updatedAt,
+          deleted_at: note.deletedAt
+        })
+      });
+      if (response.ok) {
+        console.log('Note synced to cloud successfully');
+        await this.syncWithCloud();
+      }
+    } catch (err) {
+      console.error('Remote sync error:', err);
     }
   }
 
   static async deleteNote(id: string): Promise<void> {
     let allNotes = await this.getAllNotes();
-    allNotes = allNotes.filter(n => n.id !== id);
+    const note = allNotes.find(n => n.id === id);
+    if (!note) return;
+
+    note.deletedAt = Date.now();
+    note.updatedAt = Date.now();
     
     await this.saveLocally(allNotes);
 
     const settings = await this.getSettings();
     if (settings.syncMode === 'cloud' && settings.apiToken) {
-       try {
-         // Assuming the server uses the client_id (which is our local id) for deletion 
-         // or we search for the note with that client_id
-         const response = await fetch(`${settings.apiUrl}/api/notes/0?client_id=${id}`, {
-           method: 'DELETE',
-           headers: {
-             'Authorization': `Bearer ${settings.apiToken}`,
-             'Accept': 'application/json'
-           }
-         });
-         
-         if (!response.ok) {
-           console.warn('Cloud Delete failed, will retry during full sync', response.status);
-         } else {
-           console.log('Note deleted from cloud');
-         }
-       } catch (err) {
-         console.error('Cloud Delete Network Error:', err);
+       const isBackground = typeof window === 'undefined';
+       if (!isBackground && typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+         chrome.runtime.sendMessage({ type: 'DELETE_NOTE_REMOTE', id });
+       } else {
+         await this.deleteNoteRemote(id);
        }
-       
-       // Trigger full sync to be sure
-       await this.syncWithCloud();
+    }
+  }
+
+  static async deleteNoteRemote(id: string): Promise<void> {
+    const allNotes = await this.getAllNotes();
+    const note = allNotes.find(n => n.id === id);
+    if (!note) return;
+
+    const settings = await this.getSettings();
+    try {
+      // POST to sync endpoint with deletedAt is more reliable than DELETE for tombstoning
+      const response = await fetch(`${settings.apiUrl}/api/notes`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${settings.apiToken}`,
+          'X-Api-Token': settings.apiToken,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          twitter_user_id: note.username,
+          twitter_username: note.username,
+          content: note.text,
+          source_url: note.sourceUrl,
+          client_id: note.id,
+          updated_at: note.updatedAt,
+          deleted_at: note.deletedAt
+        })
+      });
+      if (response.ok) {
+        console.log('Note marked as deleted in cloud');
+        await this.syncWithCloud();
+      }
+    } catch (err) {
+      console.error('Remote delete error:', err);
     }
   }
 
@@ -200,7 +239,9 @@ export class StorageService {
             twitter_username: n.username,
             content: n.text,
             source_url: n.sourceUrl,
-            client_id: n.id
+            client_id: n.id,
+            updated_at: n.updatedAt,
+            deleted_at: n.deletedAt
           }))
         })
       });
@@ -214,7 +255,8 @@ export class StorageService {
           text: n.content,
           sourceUrl: n.source_url,
           createdAt: new Date(n.created_at).getTime(),
-          updatedAt: new Date(n.updated_at).getTime()
+          updatedAt: new Date(n.updated_at).getTime(),
+          deletedAt: n.deleted_at ? new Date(n.deleted_at).getTime() : undefined
         }));
 
         console.log(`Synced ${serverNotes.length} notes from cloud`);

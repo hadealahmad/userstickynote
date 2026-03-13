@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useForm, usePage, Head, Link } from '@inertiajs/vue3';
 import DashboardLayout from '../Layouts/DashboardLayout.vue';
 import { 
@@ -36,6 +36,16 @@ const page = usePage();
 const showDeleteAccountDialog = ref(false);
 const showNoteDialog = ref(false);
 const editingNote = ref(null);
+const searchQuery = ref('');
+
+const filteredNotes = computed(() => {
+  if (!searchQuery.value) return props.notes;
+  const query = searchQuery.value.toLowerCase();
+  return props.notes.filter(n => 
+    (n.content && n.content.toLowerCase().includes(query)) || 
+    (n.twitter_user_id && n.twitter_user_id.toLowerCase().includes(query))
+  );
+});
 
 // Forms
 const noteForm = useForm({
@@ -153,62 +163,68 @@ const formatDate = (date) => {
 
     <!-- Notes Management -->
     <div class="mb-12">
-      <div class="flex justify-between items-center mb-8">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
             <h2 class="text-2xl font-bold font-outfit tracking-tight">Cloud Saved Notes</h2>
             <p class="text-sm text-muted-foreground mt-1">Directly manage your notes from the web.</p>
         </div>
-        <Button @click="openNoteDialog()" class="rounded-xl px-6 gap-2">
-          <Plus class="w-4 h-4" /> New Note
-        </Button>
+        <div class="flex items-center gap-3 w-full md:w-auto">
+          <div class="relative flex-1 md:w-64">
+            <Search class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input v-model="searchQuery" placeholder="Search notes..." class="pl-9 h-10 rounded-xl bg-accent/20 border-accent" />
+          </div>
+          <Button @click="openNoteDialog()" class="rounded-xl h-10 px-6 gap-2 shrink-0">
+            <Plus class="w-4 h-4" /> New Note
+          </Button>
+        </div>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-         <Card v-if="notes.length === 0" class="col-span-full py-24 bg-accent/30 border-dashed">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+         <Card v-if="filteredNotes.length === 0" class="col-span-full py-24 bg-accent/30 border-dashed">
             <CardContent class="flex flex-col items-center justify-center text-center">
                 <div class="w-16 h-16 bg-accent rounded-full flex items-center justify-center mb-4">
                     <Database class="w-8 h-8 text-muted-foreground" />
                 </div>
-                <p class="text-muted-foreground font-medium italic">No notes synced yet. Start adding notes on Twitter!</p>
+                <p class="text-muted-foreground font-medium italic">
+                  {{ searchQuery ? 'No notes matching your search.' : 'No notes synced yet. Start adding notes on Twitter!' }}
+                </p>
             </CardContent>
          </Card>
          
-         <Card v-for="note in notes" :key="note.id" class="group transition-all hover:shadow-md hover:border-primary/50 relative overflow-hidden flex flex-col">
-            <div class="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+         <Card v-for="note in filteredNotes" :key="note.id" class="group transition-all hover:shadow-md hover:border-primary/50 relative overflow-hidden flex flex-col h-fit">
+            <div class="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <DropdownMenu>
                     <DropdownMenuTrigger as-child>
-                        <Button variant="ghost" size="icon" class="h-8 w-8"><MoreVertical class="w-4 h-4" /></Button>
+                        <Button variant="ghost" size="icon" class="h-8 w-8 rounded-full bg-background/50 backdrop-blur-sm"><MoreVertical class="w-3 h-3" /></Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuItem @click="openNoteDialog(note)" class="gap-2">
-                             <Edit3 class="w-4 h-4" /> Edit
+                    <DropdownMenuContent align="end" class="rounded-xl">
+                        <DropdownMenuItem @click="openNoteDialog(note)" class="gap-2 cursor-pointer">
+                             <Edit3 class="w-3.5 h-3.5" /> Edit
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem @click="deleteNote(note.id)" class="text-destructive gap-2">
-                            <Trash class="w-4 h-4" /> Delete
+                        <DropdownMenuItem @click="deleteNote(note.id)" class="text-destructive gap-2 cursor-pointer">
+                            <Trash class="w-3.5 h-3.5" /> Delete
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
             </div>
             
-            <CardHeader class="pb-2">
-               <Badge variant="outline" class="w-fit text-[10px] font-bold py-0 transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+            <CardHeader class="p-3 pb-0">
+               <Badge variant="secondary" class="w-fit text-[9px] font-bold px-2 py-0 border-none bg-blue-500/10 text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition-colors">
                    @{{ note.twitter_user_id }}
                </Badge>
             </CardHeader>
-            <CardContent class="pb-4 flex-1">
-               <p class="text-sm leading-relaxed whitespace-pre-wrap line-clamp-6 text-foreground/80">{{ note.content }}</p>
+            <CardContent class="p-3 pt-2 flex-1">
+               <p class="text-xs leading-relaxed whitespace-pre-wrap line-clamp-4 text-foreground/90">{{ note.content }}</p>
             </CardContent>
-            <CardFooter class="pt-4 border-t bg-accent/20 flex justify-between items-center text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
-                <div class="flex items-center gap-1.5">
-                    <Clock class="w-3 h-3" />
+            <CardFooter class="px-3 py-2 border-t bg-muted/5 flex justify-between items-center text-[9px] font-medium tracking-tight text-muted-foreground">
+                <div class="flex items-center gap-1">
+                    <Clock class="w-2.5 h-2.5" />
                     {{ formatDate(note.updated_at) }}
                 </div>
-                <div class="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <a :href="'https://twitter.com/' + note.twitter_user_id" target="_blank" class="flex items-center gap-1 hover:text-primary transition-colors">
-                        View Profile <ExternalLink class="w-2.5 h-2.5" />
-                    </a>
-                </div>
+                <a :href="'https://twitter.com/' + note.twitter_user_id" target="_blank" class="flex items-center gap-1 hover:text-primary transition-colors opacity-0 group-hover:opacity-100">
+                    Visit Profile <ExternalLink class="w-2.5 h-2.5" />
+                </a>
             </CardFooter>
          </Card>
       </div>

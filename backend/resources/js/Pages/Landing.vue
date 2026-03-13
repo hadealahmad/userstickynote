@@ -28,7 +28,7 @@ const user = computed(() => page.props.auth?.user);
 </script>
 
 <template>
-    <Head title="Twitter Sticky Notes - Private Notes for X" />
+    <Head title="Username Sticky Notes - Private Notes for Profiles" />
 
     <div
         class="min-h-screen bg-background text-foreground selection:bg-primary/30 font-sans"
@@ -40,15 +40,16 @@ const user = computed(() => page.props.auth?.user);
             <div
                 class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between"
             >
-                <div class="flex items-center gap-2 group cursor-pointer">
+                <div class="flex items-center gap-3 group cursor-pointer">
                     <div
-                        class="w-9 h-9 rounded-xl bg-primary flex items-center justify-center transition-transform group-hover:rotate-6"
+                        class="w-10 h-10 rounded-xl bg-yellow-500 flex items-center justify-center transition-transform group-hover:rotate-6 shadow-lg shadow-yellow-500/20"
                     >
-                        <StickyNote class="w-5 h-5 text-primary-foreground" />
+                        <StickyNote class="w-6 h-6 text-black fill-black/20" />
                     </div>
-                    <span class="font-outfit font-bold text-xl tracking-tight"
-                        >StickyNotes</span
-                    >
+                    <div class="flex flex-col">
+                        <span class="font-outfit font-bold text-lg leading-none tracking-tight">Username</span>
+                        <span class="font-outfit text-[10px] text-muted-foreground font-medium uppercase tracking-widest">Sticky Notes</span>
+                    </div>
                 </div>
                 <div class="flex items-center gap-4">
                     <Button variant="ghost" as-child class="hidden sm:flex">
@@ -90,7 +91,7 @@ const user = computed(() => page.props.auth?.user);
                     class="text-6xl md:text-8xl font-outfit font-bold tracking-tight mb-8 bg-gradient-to-b from-foreground to-foreground/40 bg-clip-text text-transparent leading-[1.1]"
                 >
                     Private notes for <br />
-                    anyone on <span class="text-primary italic">Twitter.</span>
+                    anyone on <span class="text-yellow-500 italic">Twitter.</span>
                 </h1>
 
                 <p
@@ -296,16 +297,16 @@ const user = computed(() => page.props.auth?.user);
             <div
                 class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8 text-muted-foreground"
             >
-                <div class="flex items-center gap-2">
-                    <StickyNote class="w-4 h-4" />
-                    <span class="font-bold text-foreground">StickyNotes</span>
+                <div class="flex items-center gap-3">
+                    <StickyNote class="w-5 h-5 text-yellow-500" />
+                    <span class="font-bold text-foreground">Username Sticky Notes</span>
                     <Separator orientation="vertical" class="h-4 mx-2" />
                     <span class="text-xs">© 2026</span>
                 </div>
                 <div
                     class="flex gap-8 text-xs font-bold uppercase tracking-widest"
                 >
-                    <a href="#" class="hover:text-primary transition-colors"
+                    <a href="https://twitter.com" class="hover:text-primary transition-colors"
                         >Twitter</a
                     >
                     <a href="#" class="hover:text-primary transition-colors"

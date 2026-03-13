@@ -38,6 +38,7 @@ class HandleInertiaRequests extends Middleware
         return array_merge(parent::share($request), [
             'auth' => [
                 'user' => $request->user(),
+                'isImpersonating' => $request->session()->has('impersonator_id'),
             ],
             'flash' => [
                 'newToken' => fn () => $request->session()->get('newToken'),
