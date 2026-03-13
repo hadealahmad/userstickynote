@@ -32,6 +32,13 @@ RUN composer install --no-dev --optimize-autoloader
 RUN npm install
 RUN npm run build
 
+# Build and zip the Chrome Extension
+WORKDIR /app
+RUN npm install
+RUN npm run build
+RUN mkdir -p /app/backend/public/downloads
+RUN cd /app/dist && zip -r /app/backend/public/downloads/username-sticky-notes.zip ./*
+
 # Move built application to final location
 WORKDIR /var/www/html
 RUN cp -a /app/backend/. .
